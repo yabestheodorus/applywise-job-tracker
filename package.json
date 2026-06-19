@@ -1,8 +1,8 @@
 {
-  "name": "my-turborepo",
+  "name": "applywise-job-tracker",
   "version": "0.0.0",
   "private": true,
-  "description": "",
+  "description": "TrackJob — AI-assisted job application tracker (Turborepo: Next.js web + NestJS api)",
   "author": "",
   "license": "UNLICENSED",
   "scripts": {
