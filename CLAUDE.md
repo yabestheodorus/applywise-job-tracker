@@ -10,7 +10,7 @@ This file is the **entry point**. Don't read docs from scratch — use the map b
 | Database models, Prisma schema, enums, multi-tenancy rules, seeded stages | [db-schema.md](db-schema.md) |
 | AI/Groq behavior: extraction prompts, CV parsing, skill matching | [agents.md](agents.md) |
 | Monorepo layout, tech stack, API endpoints, auth, env vars, deployment | [code-structure.md](code-structure.md) |
-| UI/UX design notes | [design.md](design.md) *(placeholder)* |
+| Design system: colors, type, components, screens | [design.md](design.md) |
 | User-facing project readme | [readme.md](readme.md) *(placeholder)* |
 
 Rule of thumb: pick the single most relevant doc first. Only open others if that doc references them or the task genuinely spans areas.
@@ -29,6 +29,8 @@ When a past decision is reversed, update the doc *and* add a new dated log entry
 
 > Newest first. Format: `YYYY-MM-DD — <what changed> — <why> (docs touched)`
 
+- **2026-06-19** — Installed Tailwind v4 + shadcn/ui (latest, `radix-nova`/`stone`, lucide) in `apps/web`; applied the emerald/stone theme + `0.75rem` radius in `globals.css` and wired Inter (`--font-sans`) + Cal Sans (`--font-heading`) in `layout.tsx`. Added `@/*` path alias + PostCSS config. `apps/web` builds green. — Implement the design system foundation. (design.md, code-structure.md)
+- **2026-06-19** — Defined the design system: warm & friendly, light-first (both themes), **emerald** brand on **warm stone** neutrals, restrained color on the Kanban board. Type: **Cal Sans** headings + **Inter** body (Inter `tabular-nums` for numbers, no mono). Icons: **lucide-react** for UI + **react-icons** for brand/source logos (no hand-authored SVGs). Tooling: Tailwind v4 + shadcn/ui (`new-york`/`stone`) — not yet installed. — Lock the visual language before building UI. (design.md)
 - **2026-06-19** — Scaffolded the monorepo from `create-turbo@latest --example with-nestjs` (npm workspaces). Example ships `packages/{api,ui,eslint-config,jest-config,typescript-config}` — kept as-is for now; `packages/database` (Prisma) is a planned addition and the example `links` demo will be replaced. `npm run build` is green. — Get a working Next.js + NestJS Turborepo baseline. (code-structure.md)
 - **2026-06-19** — Set `strictPropertyInitialization: false` in `packages/typescript-config/nestjs.json`. — Idiomatic NestJS: decorator-based entities/DTOs declare properties without initializers; the rest of `strict` stays on. Without it the example failed to build (TS2564). (code-structure.md)
 - **2026-06-19** — Split the monolithic `trackjob_ai_context.md` into per-topic docs (Product / db-schema / agents / code-structure) + blank readme/design, and added this CLAUDE.md router. — Keep context focused; agent reads only what a task needs. (all docs)
