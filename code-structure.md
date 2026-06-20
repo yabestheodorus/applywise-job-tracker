@@ -41,7 +41,7 @@ applywise-job-tracker/
 
 **Dev ports:** web → `http://localhost:3000`, API → `http://localhost:3001` (API reads `PORT` via `ConfigService`, default `3001`). Web keeps 3000 because the OAuth redirect is pinned to `localhost:3000/auth/callback`.
 
-**Implemented so far:** `applications` module — `POST /applications/extract` (Groq draft), `POST /applications` (create + initial `StatusEvent`), `GET /applications`, `GET /applications/:id` (includes current `status` + `statusHistory` w/ each event's `status`), `POST /applications/:id/status/extract` (Groq stage suggestion), `PATCH /applications/:id/status` (move stage — existing or created from `newStageLabel` — + append `StatusEvent`, atomic); `stages` module — `GET /stages` (seeds the 9 defaults on first use), `POST/PATCH/DELETE /stages/:id`; `profile` module — `GET /profile` (get-or-create, includes experiences + education), `PATCH /profile` (upsert + replace child rows in a transaction), `POST /profile/cv` (multipart pdf/docx upload → parse text → Groq → review draft; parse-only, file not stored). Inputs validated with `ZodValidationPipe` (`common/zod-validation.pipe.ts`, profile uses the shared `@repo/api` schemas); AI via shared `GroqService` (`common/groq.service.ts`). The skill-match route is not built yet (matched/gap skills are AI-extracted inline during application extraction for now).
+**Implemented so far:** `applications` module — `POST /applications/extract` (Groq draft), `POST /applications` (create + initial `StatusEvent`), `GET /applications`, `GET /applications/:id` (includes current `status` + `statusHistory` w/ each event's `status`), `POST /applications/:id/status/extract` (Groq stage suggestion), `PATCH /applications/:id/status` (move stage — existing or created from `newStageLabel` — + append `StatusEvent`, atomic); `stages` module — `GET /stages` (seeds the 9 defaults on first use), `POST/PATCH/DELETE /stages/:id`; `profile` module — `GET /profile` (get-or-create, includes experiences + education), `PATCH /profile` (upsert + replace child rows in a transaction), `POST /profile/cv` (multipart pdf/docx upload → parse text → Groq → review draft; parse-only, file not stored); `events` module — `GET /events` (the Upcoming agenda — a user's `ScheduledEvent`s across all applications, soonest first, `?completed=true` to include done), `POST /events` (manual add), `PATCH /events/:id` (edit / mark done), `DELETE /events/:id`. Inputs validated with `ZodValidationPipe` (`common/zod-validation.pipe.ts`, profile uses the shared `@repo/api` schemas); AI via shared `GroqService` (`common/groq.service.ts`). The skill-match route is not built yet (matched/gap skills are AI-extracted inline during application extraction for now).
 
 **Auth:** every route below (except the health check) is protected by a `SupabaseAuthGuard` — it reads the `Authorization: Bearer <jwt>` header, verifies the token against Supabase's JWKS/secret, and attaches `req.user.id`. All handlers scope their Prisma queries to that `userId`; accessing another user's row returns `404` (not `403`, to avoid leaking existence). No login/logout routes live here — sign-in/up/session refresh are handled client-side by Supabase Auth; the web app just forwards the access token.
 
@@ -55,14 +55,23 @@ GET    /applications/:id         # get one, includes statusHistory
 PATCH  /applications/:id         # update notes, dates, salary etc (not status — use dedicated endpoint below)
 DELETE /applications/:id
 
-POST   /applications/:id/status/extract  # body: { rawText } → Groq reads a status-update message in the
-                                         #   context of THIS application and suggests a target StatusStage
-                                         #   (existing) or a new custom stage, + an optional note. Returns a
-                                         #   draft only — no DB write. Powers the textarea in the detail view.
-PATCH  /applications/:id/status  # body: { statusId | newStageLabel, note? } → moves stage (creating one from
-                                 #   newStageLabel if given) AND appends a StatusEvent. Exactly one of the two.
+POST   /applications/:id/status/extract  # body: { message } → Groq reads a status-update message in the
+                                         #   context of THIS application + the user's stages + current date,
+                                         #   and suggests a target StatusStage (existing) or a new custom stage,
+                                         #   a note, a confidence, AND an optional time-flagged `event`
+                                         #   { title, type, scheduledAt } if the message states a date/time.
+                                         #   Returns a draft only — no DB write. Powers the detail-view panel.
+PATCH  /applications/:id/status  # body: { statusId | newStageLabel, note?, event? } → moves stage (creating one
+                                 #   from newStageLabel if given) AND appends a StatusEvent; if `event` is present,
+                                 #   also creates a ScheduledEvent (atomic). Exactly one of statusId/newStageLabel.
                                  #   (No separate /timeline route — GET /applications/:id already includes
-                                 #    statusHistory with each event's stage, ordered by occurredAt desc.)
+                                 #    statusHistory + scheduledEvents.)
+
+GET    /events                   # the Upcoming agenda — the user's ScheduledEvents across all applications,
+                                 #   soonest first (each row includes its application + stage). ?completed=true incl. done
+POST   /events                   # manually add an event: { applicationId, title, type, scheduledAt, note? }
+PATCH  /events/:id               # edit an event or mark it done: { title?, type?, scheduledAt?, note?, completed? }
+DELETE /events/:id               # remove an event
 
 POST   /applications/:id/match-skills   # AI compares requirements vs UserProfile.skills
 
@@ -118,7 +127,8 @@ Sign-in/up runs entirely client-side via Supabase Auth (`@supabase/ssr`); the AP
 - **Authenticated shell** (`app/(app)/`): a route-group `layout.tsx` renders a left **sidebar** (`components/app-sidebar.tsx`: Board / Profile / Stages / Templates, active-link aware) + the top `AppHeader` (Add-application dialog, theme toggle, user menu) + `Toaster`. The board is `app/(app)/page.tsx`; Profile/Stages/Templates are placeholder pages for now. (The old top-bar-only `app/page.tsx` and `lib/mock.ts` were removed.)
 - **API access**: `lib/api/server.ts` `apiFetch()` calls the NestJS API server-side, forwarding the Supabase access token as a Bearer JWT (env `API_URL`, default `http://localhost:3001`). The board (Server Component) fetches `GET /stages` + `GET /applications`; `lib/types.ts` holds the view types + urgency/format helpers.
 - **Add application** (`components/board/add-application-dialog.tsx`): paste → "Extract with AI" → editable AI-suggested draft → confirm. Email/extract/create go through Server Actions in `app/(app)/applications/actions.ts`; success toasts via `sonner`, board refreshed via `revalidatePath` + `router.refresh()`.
-- **Application detail (Flow B)** (`app/(app)/applications/[id]/page.tsx`, server): board cards link here (`components/board/application-card.tsx`). Renders the header (source/location/arrangement/salary/deadline/jobUrl), Summary, Skill match (matched/gap/required chips from `components/application/`), Requirements, the `StatusTimeline` (server), and an aside `StatusUpdatePanel` (client). The panel does paste → `extractStatusUpdate` → review the AI's suggested stage (Select incl. "+ Create new stage…") + editable note → `updateApplicationStatus` → `router.refresh()`. Both actions live in `app/(app)/applications/actions.ts`; 404s from the API map to `notFound()`.
+- **Application detail (Flow B)** (`app/(app)/applications/[id]/page.tsx`, server): board cards link here (`components/board/application-card.tsx`). Renders the header (source/location/arrangement/salary/deadline/jobUrl), Summary, Skill match (matched/gap/required chips from `components/application/`), Requirements, the `StatusTimeline` (server), a `ScheduledEvents` card (`ApplicationEvents`, client), and an aside `StatusUpdatePanel` (client). The panel does paste → `extractStatusUpdate` → review the AI's suggested stage (Select incl. "+ Create new stage…") + editable note + an optional **scheduled event** (title/type/datetime, auto-filled when the AI finds one) → `updateApplicationStatus` → `router.refresh()`. Both actions live in `app/(app)/applications/actions.ts`; 404s from the API map to `notFound()`.
+- **Upcoming agenda** (`app/(app)/upcoming/page.tsx`, server): fetches `GET /events` and renders every flagged `ScheduledEvent` across applications, split into **Overdue** / **Upcoming**, soonest first, each linking back to its application with type badge + relative/absolute time. `EventActions` (client) marks done/reopen + deletes; `ApplicationEvents` also adds events manually. Event server actions (`createEvent`/`setEventCompleted`/`deleteEvent`) live in `app/(app)/events/actions.ts` and revalidate `/upcoming`, `/`, and the detail page. Sidebar has an "Upcoming" nav item.
 
 ## Code Quality Expectations
 - TypeScript strict mode on both frontend and backend

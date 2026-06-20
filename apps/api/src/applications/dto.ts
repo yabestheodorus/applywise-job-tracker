@@ -50,6 +50,23 @@ export const extractedDraftSchema = z.object({
 export type ExtractedDraft = z.infer<typeof extractedDraftSchema>;
 
 
+export const scheduledEventTypeEnum = z.enum([
+  'INTERVIEW',
+  'ASSESSMENT',
+  'DEADLINE',
+  'FOLLOWUP',
+  'OTHER',
+]);
+
+/** A time-flagged event: AI-suggested in the status flow, or user-entered. */
+export const scheduledEventInputSchema = z.object({
+  title: z.string().min(1, 'Event needs a title'),
+  type: scheduledEventTypeEnum.catch('OTHER').default('OTHER'),
+  scheduledAt: z.string().min(1), // ISO date-time ("YYYY-MM-DDTHH:mm" or full ISO)
+  note: z.string().nullable().optional(),
+});
+export type ScheduledEventInputDto = z.infer<typeof scheduledEventInputSchema>;
+
 /** Flow B step 1: client posts the raw status-update message to interpret. */
 export const extractStatusSchema = z.object({
   message: z.string().min(1, 'Paste the status update first'),
@@ -58,13 +75,18 @@ export type ExtractStatusDto = z.infer<typeof extractStatusSchema>;
 
 /**
  * Shape Groq returns for a status-update suggestion (also the review payload
- * sent to the client). Exactly one of `stageId` / `newStageLabel` is set.
+ * sent to the client). Exactly one of `stageId` / `newStageLabel` is set;
+ * `event` is present only when the message schedules a concrete date/time.
  */
 export const statusSuggestionSchema = z.object({
   stageId: z.string().nullable().default(null),
   newStageLabel: z.string().nullable().default(null),
   note: z.string().nullable().default(null),
   confidence: z.enum(['high', 'medium', 'low']).catch('medium').default('medium'),
+  event: scheduledEventInputSchema
+    .nullable()
+    .catch(null)
+    .default(null),
 });
 export type StatusSuggestion = z.infer<typeof statusSuggestionSchema>;
 
@@ -77,6 +99,7 @@ export const updateStatusSchema = z
     statusId: z.string().optional(),
     newStageLabel: z.string().min(1).optional(),
     note: z.string().nullable().optional(),
+    event: scheduledEventInputSchema.nullable().optional(),
   })
   .refine((v) => Boolean(v.statusId) !== Boolean(v.newStageLabel), {
     message: 'Provide exactly one of statusId or newStageLabel',

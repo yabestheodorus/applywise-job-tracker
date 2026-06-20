@@ -98,6 +98,7 @@ export class ApplicationsService {
           orderBy: { occurredAt: 'desc' },
           include: { status: true },
         },
+        scheduledEvents: { orderBy: { scheduledAt: 'asc' } },
       },
     });
     if (!application) throw new NotFoundException('Application not found');
@@ -112,6 +113,7 @@ export class ApplicationsService {
       message,
       currentStage: application.status.label,
       stages: stages.map((s) => ({ id: s.id, label: s.label })),
+      now: new Date().toISOString(),
     });
     return this.groq.extractJson({
       system: STATUS_UPDATE_SYSTEM_PROMPT,
@@ -142,6 +144,19 @@ export class ApplicationsService {
         statusHistory: {
           create: { statusId, note: dto.note ?? null },
         },
+        ...(dto.event
+          ? {
+              scheduledEvents: {
+                create: {
+                  userId,
+                  title: dto.event.title,
+                  type: dto.event.type,
+                  scheduledAt: new Date(dto.event.scheduledAt),
+                  note: dto.event.note ?? null,
+                },
+              },
+            }
+          : {}),
       },
       include: {
         status: true,
@@ -149,6 +164,7 @@ export class ApplicationsService {
           orderBy: { occurredAt: 'desc' },
           include: { status: true },
         },
+        scheduledEvents: { orderBy: { scheduledAt: 'asc' } },
       },
     });
   }

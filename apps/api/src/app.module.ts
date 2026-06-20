@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { ApplicationsModule } from './applications/applications.module';
 import { SupabaseAuthGuard } from './auth/supabase-auth.guard';
 import { CommonModule } from './common/common.module';
+import { EventsModule } from './events/events.module';
 import { ProfileModule } from './profile/profile.module';
 import { StagesModule } from './stages/stages.module';
 
@@ -16,6 +17,7 @@ import { StagesModule } from './stages/stages.module';
     StagesModule,
     ApplicationsModule,
     ProfileModule,
+    EventsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -11,6 +11,7 @@ import {
 
 import { StatusBadge } from '@/components/board/status-badge';
 import { SourceIcon } from '@/components/board/source-icon';
+import { ApplicationEvents } from '@/components/application/application-events';
 import { StatusTimeline } from '@/components/application/status-timeline';
 import { StatusUpdatePanel } from '@/components/application/status-update-panel';
 import {
@@ -212,6 +213,18 @@ export default async function ApplicationDetailPage({
                 applicationId={application.id}
                 stages={stages}
                 currentStageId={application.statusId}
+              />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Scheduled events</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ApplicationEvents
+                applicationId={application.id}
+                events={application.scheduledEvents}
               />
             </CardContent>
           </Card>

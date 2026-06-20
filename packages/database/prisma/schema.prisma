@@ -22,6 +22,7 @@ model Application {
   statusId        String
   status          StatusStage      @relation(fields: [statusId], references: [id])
   statusHistory   StatusEvent[]
+  scheduledEvents ScheduledEvent[]
   // Job facts (AI-extracted from rawText)
   location        String? // e.g. "South Jakarta, Indonesia"
   workArrangement WorkArrangement?
@@ -74,6 +75,34 @@ model StatusEvent {
   occurredAt    DateTime    @default(now())
 
   @@index([applicationId])
+}
+
+// A time-flagged item captured from a status update (or added manually):
+// an interview slot, an assessment deadline, a follow-up reminder. Powers the
+// "Upcoming" agenda — listed across all applications, sorted by scheduledAt.
+model ScheduledEvent {
+  id            String             @id @default(cuid())
+  userId        String // owner (Supabase auth UUID) — enables cross-application querying
+  applicationId String
+  application   Application        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  title         String // e.g. "Technical interview", "Take-home assessment due"
+  type          ScheduledEventType @default(OTHER)
+  scheduledAt   DateTime // exact moment (date + time) the event is due/happens
+  note          String?
+  completed     Boolean            @default(false)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([userId, scheduledAt])
+  @@index([applicationId])
+}
+
+enum ScheduledEventType {
+  INTERVIEW
+  ASSESSMENT
+  DEADLINE
+  FOLLOWUP
+  OTHER
 }
 
 enum Source {

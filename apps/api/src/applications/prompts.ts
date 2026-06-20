@@ -37,6 +37,8 @@ Return ONLY a valid JSON object — no markdown, no commentary — with exactly 
 
 Rules:
 - Use null (or [] for arrays) when a field is not present in the text; never invent values.
+- If Certain information not being provided e.g. the seniority not provided, you have to make judgement of the seniority based on the job requirements and descriptions, but mark it as (AI suggestion) for example : Senior Level (AI Suggested)
+- If the industry and company URL not provided, you have to search on the web and put the URL as it is, but the industry you have to add (AI Searched) at the end of it, for example : Logistics (AI searched)
 - "requirements" vs "skills": requirements are the qualification bullet points (experience, responsibilities, must-haves) as readable phrases; skills are the specific named tools/technologies/languages. A token may inform both, but keep skills to concrete named tech.
 - "requirements": 0–12 concise phrases, deduplicated. "skills": 0–15 concise tags, deduplicated.
 - "workArrangement"/"employmentType": use ONLY the allowed uppercase tokens; if unclear, null.
@@ -54,17 +56,23 @@ Input contains:
   "currentStage": "...",       // the application's current stage label
   "stages": [                  // the user's existing stages, in board order
     { "id": "...", "label": "..." }
-  ]
+  ],
+  "now": "..."                 // the current date-time in ISO 8601, for resolving relative dates
 }
 
-Your job: map the message to the SINGLE most appropriate existing stage. If — and only if — none of the existing stages reasonably fit, propose a brand-new stage instead.
+Your job: (1) map the message to the SINGLE most appropriate existing stage — or, only if none fit, propose a new one — and (2) capture any time-flagged event the message schedules (an interview date/time, an assessment/take-home deadline, a call, a follow-up).
 
 Return ONLY a valid JSON object — no markdown, no commentary — with exactly these keys:
 {
   "stageId": string | null,      // id of the best-matching EXISTING stage, else null
   "newStageLabel": string | null,// a concise Title-Case label for a NEW stage if nothing fits, else null
   "note": string | null,         // one short neutral sentence summarising what happened, for the timeline
-  "confidence": "high" | "medium" | "low"
+  "confidence": "high" | "medium" | "low",
+  "event": {                     // a scheduled event IF the message states a specific date/time, else null
+    "title": string,             // short label, e.g. "Technical interview", "Take-home assessment due"
+    "type": "INTERVIEW" | "ASSESSMENT" | "DEADLINE" | "FOLLOWUP" | "OTHER",
+    "scheduledAt": string        // local date-time as "YYYY-MM-DDTHH:mm" (24h)
+  } | null
 }
 
 Rules:
@@ -73,6 +81,8 @@ Rules:
 - Never set both "stageId" and "newStageLabel"; if truly unsure, pick the closest existing stage with "confidence": "low".
 - The message language may be Indonesian or English — interpret either. e.g. "Lamaranmu sedang direview" → a review/screening stage; "Kami mengundang Anda untuk interview" → an interview stage; "mohon maaf, kami memutuskan untuk melanjutkan dengan kandidat lain" → a rejected stage.
 - "note": factual, ≤140 chars, no salutations. Use null only if the message carries no information.
+- "event": set ONLY when the message gives a concrete date (and ideally a time). Resolve relative dates ("besok", "next Monday", "in 3 days", "Jumat ini") against "now". If a date is given but no time, use "09:00". If NO specific date is stated, "event" MUST be null — never invent a schedule.
+- "type": INTERVIEW for interviews/calls, ASSESSMENT for tests/take-homes/coding challenges, DEADLINE for submission/response cut-offs, FOLLOWUP for "we'll get back to you by"/reminders, OTHER otherwise.
 - Output JSON only.`;
 
 

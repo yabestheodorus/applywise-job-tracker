@@ -6,6 +6,7 @@ import { apiFetch, ApiError } from '@/lib/api/server';
 import type {
   ApplicationDetail,
   EmploymentType,
+  ScheduledEventInput,
   Source,
   StatusSuggestion,
   WorkArrangement,
@@ -102,9 +103,10 @@ export async function extractStatusUpdate(
   }
 }
 
-export type UpdateStatusInput =
+export type UpdateStatusInput = (
   | { statusId: string; note?: string | null }
-  | { newStageLabel: string; note?: string | null };
+  | { newStageLabel: string; note?: string | null }
+) & { event?: ScheduledEventInput | null };
 
 /** Flow B step 3: apply the confirmed stage change. Revalidates board + detail. */
 export async function updateApplicationStatus(
@@ -117,6 +119,7 @@ export async function updateApplicationStatus(
       body: JSON.stringify(input),
     });
     revalidatePath('/');
+    revalidatePath('/upcoming');
     revalidatePath(`/applications/${id}`);
     return { ok: true, data: updated };
   } catch (e) {

@@ -3,12 +3,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FileText, Layers, LayoutGrid, User } from 'lucide-react';
+import { CalendarClock, FileText, Layers, LayoutGrid, User } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 
 const NAV = [
   { href: '/', label: 'Board', icon: LayoutGrid },
+  { href: '/upcoming', label: 'Upcoming', icon: CalendarClock },
   { href: '/profile', label: 'Profile', icon: User },
   { href: '/stages', label: 'Stages', icon: Layers },
   { href: '/templates', label: 'Templates', icon: FileText },

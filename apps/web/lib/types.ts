@@ -76,11 +76,64 @@ export type StatusEvent = {
   status: StatusStage;
 };
 
+export type ScheduledEventType =
+  | 'INTERVIEW'
+  | 'ASSESSMENT'
+  | 'DEADLINE'
+  | 'FOLLOWUP'
+  | 'OTHER';
+
+export const SCHEDULED_EVENT_TYPES: ScheduledEventType[] = [
+  'INTERVIEW',
+  'ASSESSMENT',
+  'DEADLINE',
+  'FOLLOWUP',
+  'OTHER',
+];
+
+export const SCHEDULED_EVENT_TYPE_LABELS: Record<ScheduledEventType, string> = {
+  INTERVIEW: 'Interview',
+  ASSESSMENT: 'Assessment',
+  DEADLINE: 'Deadline',
+  FOLLOWUP: 'Follow-up',
+  OTHER: 'Other',
+};
+
+/** A time-flagged event captured from a status update (or added manually). */
+export type ScheduledEvent = {
+  id: string;
+  applicationId: string;
+  title: string;
+  type: ScheduledEventType;
+  scheduledAt: string;
+  note: string | null;
+  completed: boolean;
+};
+
+/** The AI/user draft of an event before it's persisted. */
+export type ScheduledEventInput = {
+  title: string;
+  type: ScheduledEventType;
+  scheduledAt: string;
+  note?: string | null;
+};
+
+/** GET /events row — an event plus enough of its application to render + link. */
+export type UpcomingEvent = ScheduledEvent & {
+  application: {
+    id: string;
+    company: string;
+    role: string;
+    status: Pick<StatusStage, 'id' | 'label' | 'color'>;
+  };
+};
+
 /** GET /applications/:id response — the full application + current stage + timeline. */
 export type ApplicationDetail = Application & {
   rawText: string;
   status: StatusStage;
   statusHistory: StatusEvent[];
+  scheduledEvents: ScheduledEvent[];
 };
 
 export type StatusConfidence = 'high' | 'medium' | 'low';
@@ -91,6 +144,7 @@ export type StatusSuggestion = {
   newStageLabel: string | null;
   note: string | null;
   confidence: StatusConfidence;
+  event: ScheduledEventInput | null;
 };
 
 export type CvParseStatus = 'NONE' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
@@ -177,4 +231,28 @@ export function relativeDays(dateISO: string): string {
 
 export function formatIDR(n: number): string {
   return `Rp ${(n / 1_000_000).toLocaleString('id-ID')}jt`;
+}
+
+/** Absolute date + time for a scheduled event, e.g. "25 Jun 2026, 14:00". */
+export function formatEventWhen(iso: string): string {
+  return new Date(iso).toLocaleString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+/**
+ * Relative wording for an event time. Under a day → hours (floored at 1h, no
+ * minutes), e.g. "in 5h"; a day or more → whole days, e.g. "in 3d". Past →
+ * "Xh overdue" / "Xd overdue".
+ */
+export function relativeWhen(iso: string): string {
+  const ms = new Date(iso).getTime() - Date.now();
+  const past = ms < 0;
+  const hours = Math.round(Math.abs(ms) / (1000 * 60 * 60));
+  const body = hours < 24 ? `${Math.max(hours, 1)}h` : `${Math.round(hours / 24)}d`;
+  return past ? `${body} overdue` : `in ${body}`;
 }

@@ -13,6 +13,7 @@ model Application {
   statusId        String
   status          StatusStage @relation(fields: [statusId], references: [id])
   statusHistory   StatusEvent[]
+  scheduledEvents ScheduledEvent[]
   // Job facts (AI-extracted from rawText, then user-editable)
   location        String?           // e.g. "South Jakarta, Indonesia"
   workArrangement WorkArrangement?
@@ -65,6 +66,35 @@ model StatusEvent {
   occurredAt    DateTime    @default(now())
 
   @@index([applicationId])
+}
+
+// A time-flagged item captured from a status update (or added manually):
+// an interview slot, an assessment deadline, a follow-up reminder. Powers the
+// "Upcoming" agenda — queried per-user across applications, sorted by scheduledAt.
+// Carries userId (not just applicationId) so the agenda is one indexed query.
+model ScheduledEvent {
+  id            String             @id @default(cuid())
+  userId        String             // owner (Supabase auth UUID)
+  applicationId String
+  application   Application        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  title         String             // e.g. "Technical interview", "Take-home assessment due"
+  type          ScheduledEventType @default(OTHER)
+  scheduledAt   DateTime           // exact moment (date + time) the event is due/happens
+  note          String?
+  completed     Boolean            @default(false) // done items drop off the Upcoming list
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([userId, scheduledAt]) // the Upcoming query: a user's events, soonest first
+  @@index([applicationId])
+}
+
+enum ScheduledEventType {
+  INTERVIEW   // interviews, calls
+  ASSESSMENT  // tests, take-homes, coding challenges
+  DEADLINE    // submission / response cut-offs
+  FOLLOWUP    // "we'll get back to you by" / reminders
+  OTHER
 }
 
 enum Source {

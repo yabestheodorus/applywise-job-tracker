@@ -20,7 +20,13 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import type { StatusConfidence, StatusStage } from '@/lib/types';
+import {
+  SCHEDULED_EVENT_TYPES,
+  SCHEDULED_EVENT_TYPE_LABELS,
+  type ScheduledEventType,
+  type StatusConfidence,
+  type StatusStage,
+} from '@/lib/types';
 
 // Sentinel Select value meaning "create a brand-new stage".
 const NEW_STAGE = '__new__';
@@ -51,6 +57,11 @@ export function StatusUpdatePanel({
   const [choice, setChoice] = useState<string>(currentStageId);
   const [newStageLabel, setNewStageLabel] = useState('');
   const [note, setNote] = useState('');
+  // Optional time-flagged event (AI-suggested or added by hand).
+  const [hasEvent, setHasEvent] = useState(false);
+  const [eventTitle, setEventTitle] = useState('');
+  const [eventType, setEventType] = useState<ScheduledEventType>('OTHER');
+  const [eventAt, setEventAt] = useState(''); // datetime-local "YYYY-MM-DDTHH:mm"
 
   function handleExtract() {
     if (!message.trim()) {
@@ -72,6 +83,18 @@ export function StatusUpdatePanel({
         setNewStageLabel(s.newStageLabel);
       }
       setNote(s.note ?? '');
+      if (s.event) {
+        setHasEvent(true);
+        setEventTitle(s.event.title);
+        setEventType(s.event.type);
+        // The API returns "YYYY-MM-DDTHH:mm"; trim any seconds for the input.
+        setEventAt(s.event.scheduledAt.slice(0, 16));
+      } else {
+        setHasEvent(false);
+        setEventTitle('');
+        setEventType('OTHER');
+        setEventAt('');
+      }
       setConfidence(s.confidence);
       setSuggested(true);
     });
@@ -83,22 +106,34 @@ export function StatusUpdatePanel({
       toast.error('Name the new stage');
       return;
     }
+    if (hasEvent && (!eventTitle.trim() || !eventAt)) {
+      toast.error('Give the scheduled event a title and date/time');
+      return;
+    }
+    const event =
+      hasEvent && eventTitle.trim() && eventAt
+        ? { title: eventTitle.trim(), type: eventType, scheduledAt: eventAt }
+        : null;
     startSubmit(async () => {
       const res = await updateApplicationStatus(
         applicationId,
         creatingNew
-          ? { newStageLabel: newStageLabel.trim(), note: note.trim() || null }
-          : { statusId: choice, note: note.trim() || null },
+          ? { newStageLabel: newStageLabel.trim(), note: note.trim() || null, event }
+          : { statusId: choice, note: note.trim() || null, event },
       );
       if (!res.ok) {
         toast.error(res.error);
         return;
       }
-      toast.success('Status updated');
+      toast.success(event ? 'Status updated · event added' : 'Status updated');
       setMessage('');
       setSuggested(false);
       setConfidence(null);
       setNote('');
+      setHasEvent(false);
+      setEventTitle('');
+      setEventType('OTHER');
+      setEventAt('');
       router.refresh();
     });
   }
@@ -176,6 +211,61 @@ export function StatusUpdatePanel({
               onChange={(e) => setNote(e.target.value)}
               placeholder="What happened"
             />
+          </div>
+
+          <div className="border-border flex flex-col gap-3 rounded-md border p-3">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                className="accent-primary size-4"
+                checked={hasEvent}
+                onChange={(e) => setHasEvent(e.target.checked)}
+              />
+              Add a scheduled event
+            </label>
+
+            {hasEvent ? (
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="eventTitle">Event</Label>
+                  <Input
+                    id="eventTitle"
+                    value={eventTitle}
+                    onChange={(e) => setEventTitle(e.target.value)}
+                    placeholder="Technical interview"
+                  />
+                </div>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="eventType">Type</Label>
+                    <Select
+                      value={eventType}
+                      onValueChange={(v) => setEventType(v as ScheduledEventType)}
+                    >
+                      <SelectTrigger id="eventType">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SCHEDULED_EVENT_TYPES.map((t) => (
+                          <SelectItem key={t} value={t}>
+                            {SCHEDULED_EVENT_TYPE_LABELS[t]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <Label htmlFor="eventAt">When</Label>
+                    <Input
+                      id="eventAt"
+                      type="datetime-local"
+                      value={eventAt}
+                      onChange={(e) => setEventAt(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <Button type="button" onClick={handleSubmit} disabled={submitting}>

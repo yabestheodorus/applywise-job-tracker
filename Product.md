@@ -25,7 +25,8 @@ These are **two distinct flows** with separate UIs — creating an application a
 
 **Shared views**
 - Main view: Kanban board with columns = `StatusStage` ordered by `order`, fully drag-and-drop reorderable, user can add/rename/delete columns anytime
-- Clicking a card opens the detail view: timeline (StatusEvent history, mirroring the "Tracking Status Lamaran" UI pattern from JobStreet) + AI skill match + the status-update textarea from flow B
+- Clicking a card opens the detail view: timeline (StatusEvent history, mirroring the "Tracking Status Lamaran" UI pattern from JobStreet) + AI skill match + the status-update textarea from flow B + the application's scheduled events
+- **Upcoming agenda**: a dedicated view listing every time-flagged `ScheduledEvent` (interview slot, assessment deadline, follow-up) across all applications, sorted soonest-first with overdue/upcoming grouping. Events are captured automatically when a status update mentions a date/time (AI extracts `{title, type, datetime}`, user confirms), or added manually; each links back to its application.
 
 ## Scope Boundaries (explicitly OUT of scope for this MVP — mention in README)
 - Multi-tenant via Supabase Auth (email/password + OAuth as Supabase provides). No custom roles/permissions or team/organization sharing — each user sees only their own data.
