@@ -14,6 +14,9 @@ cp packages/database/.env.example packages/database/.env
 cp apps/api/.env.example          apps/api/.env
 cp apps/web/.env.local.example    apps/web/.env.local
 
+# Generate the Prisma client (output is gitignored, so a fresh clone needs this):
+npm run generate -w @repo/database
+
 npm run dev   # web → http://localhost:3000, api → :3001 (turbo)
 ```
 

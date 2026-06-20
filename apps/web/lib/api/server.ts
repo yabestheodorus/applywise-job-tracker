@@ -1,6 +1,13 @@
 import { createClient } from '@/lib/supabase/server';
 
-const API_URL = process.env.API_URL ?? 'http://localhost:3001';
+// Normalize: a scheme-less host (e.g. "api.up.railway.app") isn't a valid
+// fetch URL, so default to https; also drop any trailing slash.
+function normalizeBaseUrl(raw: string): string {
+  const withScheme = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  return withScheme.replace(/\/+$/, '');
+}
+
+const API_URL = normalizeBaseUrl(process.env.API_URL ?? 'http://localhost:3001');
 
 export class ApiError extends Error {
   constructor(
