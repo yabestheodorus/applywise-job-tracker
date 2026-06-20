@@ -1,6 +1,6 @@
 # Design System
 
-The visual language for TrackJob. **Warm & friendly, light-first (ships dark too), emerald accent on a warm stone neutral base.** Color on the board is *restrained* — neutral surfaces with thin colored accents, never full tints.
+The visual language for ApplyWise. **Warm & friendly, light-first (ships dark too), emerald accent on a warm stone neutral base.** Color on the board is *restrained* — neutral surfaces with thin colored accents, never full tints.
 
 > Status: **Installed** in `apps/web` — Tailwind v4 + shadcn/ui (`radix-nova` style, `stone` base) with this emerald/stone theme and the Inter + Cal Sans fonts wired in `globals.css` / `layout.tsx`. Remaining UI wiring (themes toggle, dnd-kit, etc.) is tracked in the Setup checklist at the bottom.
 
@@ -13,7 +13,7 @@ The visual language for TrackJob. **Warm & friendly, light-first (ships dark too
 
 ## 2. Foundations & tooling
 - **Tailwind CSS v4** (CSS-first config, `@theme`) + **shadcn/ui** (style: `new-york`, base color: `stone`).
-- **Theming:** CSS variables on `:root` / `.dark`, toggled with `next-themes`. Default to **system**, but light is the primary design target. shadcn token names (`--background`, `--foreground`, `--primary`, …) so components inherit automatically.
+- **Theming:** CSS variables on `:root` / `.dark`, toggled with a small in-house theme provider (`components/theme/` — `ThemeProvider`/`useTheme` + a `ThemeScript` that injects the no-flash script via `useServerInsertedHTML`; replaced `next-themes`). Default to **system**, but light is the primary design target. shadcn token names (`--background`, `--foreground`, `--primary`, …) so components inherit automatically.
 - **Icons:** `lucide-react` for UI/system icons (chevrons, status, actions). **`react-icons`** for brand/source logos (WhatsApp, LinkedIn, Glints, JobStreet, GitHub, etc. — use its Simple Icons `si*` set) and anywhere a real logo is needed. **Don't hand-author SVG files** — pull from these libraries.
 - **Forms:** `react-hook-form` + `zod` (shared schemas from the types/API package).
 - **Drag & drop (Kanban):** `@dnd-kit/core` + `@dnd-kit/sortable` (keyboard-accessible).
@@ -119,6 +119,6 @@ Button · Card · Badge · Input · Textarea · Label · Select · Form · Dialo
 ## 10. Setup checklist (when wiring the UI)
 - [x] Tailwind v4 + `shadcn@latest init` (style `radix-nova`, base `stone`); `--primary` = emerald, `--radius` = `0.75rem` in `globals.css` (light + dark).
 - [x] Fonts wired in `app/layout.tsx` — Inter → `--font-sans`, Cal Sans → `--font-heading`.
-- [ ] Add `next-themes` (`ThemeProvider`, default `system`).
+- [x] In-house theme provider (`components/theme/`, default `system`) — `ThemeProvider`/`useTheme` + `ThemeScript` (no-flash via `useServerInsertedHTML`).
 - [ ] Add `@dnd-kit/*`, `sonner`, `react-icons`, `react-hook-form`, `zod` (lucide-react already in via shadcn).
 - [ ] Replace the example home page / remove leftover CSS modules.

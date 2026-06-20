@@ -1,0 +1,178 @@
+// ApplyWise — Prisma schema. See db-schema.md for the canonical spec.
+// Multi-tenant: every top-level model carries `userId` (Supabase auth user UUID).
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  runtime      = "nodejs"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Application {
+  id              String           @id @default(cuid())
+  userId          String // Supabase auth user UUID — owner of this row
+  company         String
+  role            String
+  source          Source           @default(OTHER)
+  rawText         String
+  statusId        String
+  status          StatusStage      @relation(fields: [statusId], references: [id])
+  statusHistory   StatusEvent[]
+  // Job facts (AI-extracted from rawText)
+  location        String? // e.g. "South Jakarta, Indonesia"
+  workArrangement WorkArrangement?
+  employmentType  EmploymentType?
+  seniority       String? // e.g. "Mid-Senior", "Junior" — free-text, postings vary
+  industry        String?
+  jobUrl          String? // link back to the posting / company site
+  summary         String? // AI 1–2 sentence role/company summary
+  salaryExpected  Int?
+  salaryOffered   Int?
+  requirements    String[] // requirement/qualification bullets (full phrases)
+  skills          String[] // explicit required skills/tech, e.g. ["React", "Node.js"]
+  matchedSkills   String[] // computed: skills ∩ UserProfile.skills (empty until a profile exists)
+  gapSkills       String[] // computed: skills not in UserProfile.skills
+  appliedDate     DateTime         @default(now())
+  followUpDate    DateTime?
+  deadlineDate    DateTime?
+  notes           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@index([userId])
+  @@index([statusId])
+}
+
+// User-defined, fully dynamic — not a fixed enum.
+// Seeded with sensible defaults on first sign-in, then editable.
+model StatusStage {
+  id           String        @id @default(cuid())
+  userId       String // stages are per-user
+  label        String
+  order        Int // controls column position on the Kanban board
+  color        String        @default("#94a3b8") // hex
+  isTerminal   Boolean       @default(false)
+  applications Application[]
+  statusEvents StatusEvent[]
+  createdAt    DateTime      @default(now())
+
+  @@index([userId])
+}
+
+// Tracks every status change over time (powers the timeline).
+model StatusEvent {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  statusId      String
+  status        StatusStage @relation(fields: [statusId], references: [id])
+  note          String?
+  occurredAt    DateTime    @default(now())
+
+  @@index([applicationId])
+}
+
+enum Source {
+  WHATSAPP
+  EMAIL
+  LINKEDIN
+  GLINTS
+  JOBSTREET
+  DIRECT
+  OTHER
+}
+
+enum WorkArrangement {
+  REMOTE
+  HYBRID
+  ONSITE
+}
+
+enum EmploymentType {
+  FULLTIME
+  PARTTIME
+  CONTRACT
+  INTERNSHIP
+}
+
+model UserProfile {
+  id     String @id @default(cuid())
+  userId String @unique // one profile per Supabase auth user
+
+  // Identity / contact
+  fullName String?
+  headline String?
+  email    String?
+  phone    String?
+  location String?
+  summary  String?
+  links    Json? // { linkedin, github, portfolio, website }
+
+  // Skills & matching
+  skills          String[]
+  yearsExperience Int?
+
+  // Structured CV content
+  experiences    WorkExperience[]
+  education      Education[]
+  certifications String[]
+  languages      String[]
+
+  // CV source artifacts
+  cvFileUrl     String?
+  cvFileName    String?
+  cvRawText     String?
+  cvUploadedAt  DateTime?
+  cvParseStatus CvParseStatus @default(NONE)
+
+  // Reusable application answers
+  templateAnswers Json @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum CvParseStatus {
+  NONE
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// One row per job/role on the CV. AI-extracted, then user-editable.
+model WorkExperience {
+  id          String      @id @default(cuid())
+  profileId   String
+  profile     UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  company     String
+  title       String
+  location    String?
+  startDate   String? // CVs are inconsistent — kept as string
+  endDate     String?
+  isCurrent   Boolean     @default(false)
+  description String?
+  skillsUsed  String[]
+  order       Int         @default(0)
+
+  @@index([profileId])
+}
+
+// One row per degree/program. AI-extracted, user-editable.
+model Education {
+  id           String      @id @default(cuid())
+  profileId    String
+  profile      UserProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  institution  String
+  degree       String?
+  fieldOfStudy String?
+  startDate    String?
+  endDate      String?
+  description  String?
+  order        Int         @default(0)
+
+  @@index([profileId])
+}

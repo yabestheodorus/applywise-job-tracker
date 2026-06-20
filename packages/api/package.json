@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "dev": "pnpm build --watch",
+    "dev": "tsc -b -v --watch",
     "build": "tsc -b -v",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\""
   },
@@ -27,7 +27,8 @@
     }
   },
   "dependencies": {
-    "@nestjs/mapped-types": "*"
+    "@nestjs/mapped-types": "*",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",

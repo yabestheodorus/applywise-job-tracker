@@ -1,0 +1,40 @@
+{
+  "name": "@repo/database",
+  "version": "0.0.0",
+  "description": "ApplyWise Prisma client and schema (@repo/database).",
+  "type": "commonjs",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/**"
+  ],
+  "scripts": {
+    "build": "prisma generate && tsc -b -v",
+    "dev": "tsc -b -v --watch",
+    "generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/pg": "^8.20.0",
+    "dotenv": "^16.0.3",
+    "prisma": "^7.8.0"
+  }
+}

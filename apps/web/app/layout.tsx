@@ -2,6 +2,9 @@ import type { Metadata } from 'next';
 import { Inter, Cal_Sans } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
+import { ThemeProvider } from '@/components/theme/theme-provider';
+import { ThemeScript } from '@/components/theme/theme-script';
+import { TooltipProvider } from '@/components/ui/tooltip';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const calSans = Cal_Sans({
@@ -11,7 +14,7 @@ const calSans = Cal_Sans({
 });
 
 export const metadata: Metadata = {
-  title: 'TrackJob',
+  title: 'ApplyWise',
   description: 'AI-assisted job application tracker',
 };
 
@@ -26,7 +29,12 @@ export default function RootLayout({
       suppressHydrationWarning
       className={cn(inter.variable, calSans.variable)}
     >
-      <body className="font-sans antialiased">{children}</body>
+      <body className="font-sans antialiased">
+        <ThemeScript />
+        <ThemeProvider defaultTheme="system" disableTransitionOnChange>
+          <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+        </ThemeProvider>
+      </body>
     </html>
   );
 }

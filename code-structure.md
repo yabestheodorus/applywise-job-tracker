@@ -10,8 +10,8 @@ applywise-job-tracker/
 │   ├── web/                 # Next.js 15 (App Router) frontend
 │   └── api/                 # NestJS backend
 ├── packages/
-│   ├── api/                 # shared NestJS DTOs/types library (@repo/api) — currently holds the
-│   │                        #   example "links" module; will host our shared API contracts
+│   ├── api/                 # shared, framework-agnostic API contracts (@repo/api) — Zod schemas +
+│   │                        #   inferred types (e.g. profile/profile.schema.ts) used by BOTH apps
 │   ├── ui/                  # shared React component library (@repo/ui)
 │   ├── eslint-config/       # shared ESLint config (@repo/eslint-config)
 │   ├── jest-config/         # shared Jest config (@repo/jest-config)
@@ -21,9 +21,12 @@ applywise-job-tracker/
 └── README.md
 ```
 
-**Planned additions (not yet scaffolded):**
-- `packages/database/` — Prisma schema + generated client, shared by `apps/api` (and any server code). See [db-schema.md](../db-schema.md).
-- The example `links` demo (`packages/api/src/links`, `apps/api/src/links`, `apps/web` home page fetch) will be removed/replaced as we build real modules.
+- `packages/database/` — Prisma schema + generated client (`@repo/database`), shared by `apps/api` (and any server code). Implemented. See [db-schema.md](../db-schema.md).
+
+- `packages/api/` (`@repo/api`) now hosts shared **Zod contracts** consumed by both apps: the API validates requests with them (`ZodValidationPipe`) and the web uses them as TanStack Form validators (Zod implements Standard Schema) + payload types. Built to `dist/` via `tsc`; `entry.ts` exports only framework-agnostic schemas (no NestJS imports, so the web bundle stays clean).
+
+**Planned cleanup:**
+- The example `links` demo source remains in `packages/api/src/links` but is **no longer exported** from `entry.ts`; delete it when convenient.
 
 ## Tech Stack
 - Frontend: Next.js 15 (App Router), TypeScript, Tailwind CSS, shadcn/ui
@@ -35,6 +38,10 @@ applywise-job-tracker/
 - Deployment: Vercel (web), Railway or Render (api)
 
 ## API Endpoints (NestJS — apps/api)
+
+**Dev ports:** web → `http://localhost:3000`, API → `http://localhost:3001` (API reads `PORT` via `ConfigService`, default `3001`). Web keeps 3000 because the OAuth redirect is pinned to `localhost:3000/auth/callback`.
+
+**Implemented so far:** `applications` module — `POST /applications/extract` (Groq draft), `POST /applications` (create + initial `StatusEvent`), `GET /applications`, `GET /applications/:id` (includes current `status` + `statusHistory` w/ each event's `status`), `POST /applications/:id/status/extract` (Groq stage suggestion), `PATCH /applications/:id/status` (move stage — existing or created from `newStageLabel` — + append `StatusEvent`, atomic); `stages` module — `GET /stages` (seeds the 9 defaults on first use), `POST/PATCH/DELETE /stages/:id`; `profile` module — `GET /profile` (get-or-create, includes experiences + education), `PATCH /profile` (upsert + replace child rows in a transaction), `POST /profile/cv` (multipart pdf/docx upload → parse text → Groq → review draft; parse-only, file not stored). Inputs validated with `ZodValidationPipe` (`common/zod-validation.pipe.ts`, profile uses the shared `@repo/api` schemas); AI via shared `GroqService` (`common/groq.service.ts`). The skill-match route is not built yet (matched/gap skills are AI-extracted inline during application extraction for now).
 
 **Auth:** every route below (except the health check) is protected by a `SupabaseAuthGuard` — it reads the `Authorization: Bearer <jwt>` header, verifies the token against Supabase's JWKS/secret, and attaches `req.user.id`. All handlers scope their Prisma queries to that `userId`; accessing another user's row returns `404` (not `403`, to avoid leaking existence). No login/logout routes live here — sign-in/up/session refresh are handled client-side by Supabase Auth; the web app just forwards the access token.
 
@@ -52,8 +59,10 @@ POST   /applications/:id/status/extract  # body: { rawText } → Groq reads a st
                                          #   context of THIS application and suggests a target StatusStage
                                          #   (existing) or a new custom stage, + an optional note. Returns a
                                          #   draft only — no DB write. Powers the textarea in the detail view.
-PATCH  /applications/:id/status  # body: { statusId, note? } → updates current status AND appends a StatusEvent
-GET    /applications/:id/timeline # returns full statusHistory ordered by occurredAt, for the "Tracking Status" UI
+PATCH  /applications/:id/status  # body: { statusId | newStageLabel, note? } → moves stage (creating one from
+                                 #   newStageLabel if given) AND appends a StatusEvent. Exactly one of the two.
+                                 #   (No separate /timeline route — GET /applications/:id already includes
+                                 #    statusHistory with each event's stage, ordered by occurredAt desc.)
 
 POST   /applications/:id/match-skills   # AI compares requirements vs UserProfile.skills
 
@@ -85,12 +94,38 @@ GET    /templates                # list template answers
 POST   /templates                # add template answer
 ```
 
+### API infrastructure (implemented in `apps/api/src`)
+
+- **Config:** `ConfigModule.forRoot({ isGlobal: true })` in `AppModule` loads `.env`. Read env via the injected `ConfigService` (`config.getOrThrow('KEY')`) — **not** `process.env` — in providers/guards.
+- **`CommonModule` / `PrismaService`** (`common/`): `@Global()` module holding cross-cutting providers (DB access, and more as added). `PrismaService extends PrismaClient` (from `@repo/database`), built with the `@prisma/adapter-pg` driver adapter on `DATABASE_URL` (via `ConfigService`), and `$connect`/`$disconnect` on the module lifecycle (`main.ts` calls `app.enableShutdownHooks()`). Inject `PrismaService` anywhere.
+- **`SupabaseAuthGuard`** (`auth/supabase-auth.guard.ts`): registered globally via `APP_GUARD`, so **every route is protected by default**. Reads `Authorization: Bearer <jwt>` and verifies it against the project's public JWKS (`SUPABASE_JWKS_URL`, asymmetric ES256/RS256 keys) using `jose`'s `createRemoteJWKSet` — the key set is fetched once and auto-refreshed on an unknown `kid`. On success attaches `req.user = { id: sub, email }`. Missing/invalid/expired token → `401`.
+- **`@Public()`** (`auth/public.decorator.ts`): opts a route/controller out of the guard. Used by `GET /health` (`app.controller.ts`).
+- **`@CurrentUser()`** (`auth/current-user.decorator.ts`): param decorator returning the `AuthUser` (`auth/auth-user.ts`); `@CurrentUser('id')` returns just the Supabase user UUID that handlers scope Prisma queries to.
+
+### Web auth (implemented in `apps/web`)
+
+Sign-in/up runs entirely client-side via Supabase Auth (`@supabase/ssr`); the API only verifies the forwarded JWT.
+
+- **Supabase clients** (`lib/supabase/`): `client.ts` (`createBrowserClient` for Client Components), `server.ts` (`createServerClient` bound to Next's async `cookies()`, for Server Components/Actions/Route Handlers), and `middleware.ts` (`updateSession` helper).
+- **`proxy.ts`** (Next 16 "proxy" convention, formerly `middleware.ts`): on every request, refreshes the session and **gates access** — unauthenticated users → `/login`, signed-in users are bounced off `/login` and `/signup`. Public prefixes: `/login`, `/signup`, `/auth`.
+- **Auth pages** (`app/(auth)/`): `login` and `signup` render a shared `components/auth/auth-form.tsx` (email/password + "Continue with Google"). Email/password go through Server Actions in `app/(auth)/actions.ts` (`signInWithPassword` / `signUp`); Google uses client-side `signInWithOAuth`. Signup with email confirmation shows a "check your email" message.
+- **`app/auth/callback/route.ts`**: exchanges the OAuth/confirmation `code` for a session, then redirects to `next` (default `/`). **`app/auth/signout/route.ts`**: `POST` → `signOut()` → `/login`.
+- **`components/auth/user-menu.tsx`**: avatar dropdown in the header showing the signed-in email + sign-out (POSTs to `/auth/signout`); the home page passes the verified user's email down.
+- **Google provider** must be enabled in the Supabase dashboard, with `${SITE_URL}/auth/callback` allowed as a redirect URL.
+
+### Web app shell & data (implemented in `apps/web`)
+
+- **Authenticated shell** (`app/(app)/`): a route-group `layout.tsx` renders a left **sidebar** (`components/app-sidebar.tsx`: Board / Profile / Stages / Templates, active-link aware) + the top `AppHeader` (Add-application dialog, theme toggle, user menu) + `Toaster`. The board is `app/(app)/page.tsx`; Profile/Stages/Templates are placeholder pages for now. (The old top-bar-only `app/page.tsx` and `lib/mock.ts` were removed.)
+- **API access**: `lib/api/server.ts` `apiFetch()` calls the NestJS API server-side, forwarding the Supabase access token as a Bearer JWT (env `API_URL`, default `http://localhost:3001`). The board (Server Component) fetches `GET /stages` + `GET /applications`; `lib/types.ts` holds the view types + urgency/format helpers.
+- **Add application** (`components/board/add-application-dialog.tsx`): paste → "Extract with AI" → editable AI-suggested draft → confirm. Email/extract/create go through Server Actions in `app/(app)/applications/actions.ts`; success toasts via `sonner`, board refreshed via `revalidatePath` + `router.refresh()`.
+- **Application detail (Flow B)** (`app/(app)/applications/[id]/page.tsx`, server): board cards link here (`components/board/application-card.tsx`). Renders the header (source/location/arrangement/salary/deadline/jobUrl), Summary, Skill match (matched/gap/required chips from `components/application/`), Requirements, the `StatusTimeline` (server), and an aside `StatusUpdatePanel` (client). The panel does paste → `extractStatusUpdate` → review the AI's suggested stage (Select incl. "+ Create new stage…") + editable note → `updateApplicationStatus` → `router.refresh()`. Both actions live in `app/(app)/applications/actions.ts`; 404s from the API map to `notFound()`.
+
 ## Code Quality Expectations
 - TypeScript strict mode on both frontend and backend
 - Shared types package to avoid duplicating interfaces between web and api
 - Environment variables for Groq API key, database URL, and Supabase config — never hardcoded, .env.example provided.
-  - web: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-  - api: `SUPABASE_URL`, `SUPABASE_JWT_SECRET` (or JWKS URL) for verifying tokens in the guard, `SUPABASE_SERVICE_ROLE_KEY` for Storage uploads, `DATABASE_URL`, `GROQ_API_KEY`
+  - web: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (browser-safe; in `apps/web/.env.local`)
+  - api: `SUPABASE_URL`, `SUPABASE_JWKS_URL` (project `/auth/v1/.well-known/jwks.json` — the guard verifies tokens against it), `SUPABASE_SECRET_KEY` for Storage uploads (new-style key, formerly the service-role key), `DATABASE_URL`, `DIRECT_URL` (migrations), `GROQ_API_KEY`
 - Basic error handling on all API routes (try/catch, proper HTTP status codes, Groq rate-limit handling)
 - `401` on missing/invalid token, `404` on cross-tenant access; the auth guard is applied globally and routes opt out only where intentionally public
 - Zod validation PIPE on API inputs

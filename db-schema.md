@@ -13,11 +13,20 @@ model Application {
   statusId        String
   status          StatusStage @relation(fields: [statusId], references: [id])
   statusHistory   StatusEvent[]
+  // Job facts (AI-extracted from rawText, then user-editable)
+  location        String?           // e.g. "South Jakarta, Indonesia"
+  workArrangement WorkArrangement?
+  employmentType  EmploymentType?
+  seniority       String?           // e.g. "Mid-Senior" — free-text, postings vary
+  industry        String?
+  jobUrl          String?           // link back to the posting / company site
+  summary         String?  @db.Text // AI 1–2 sentence role/company summary
   salaryExpected  Int?
   salaryOffered   Int?
-  requirements    String[] // AI-extracted requirement tags
-  matchedSkills   String[] // computed against UserProfile.skills
-  gapSkills       String[] // computed
+  requirements    String[] // requirement/qualification bullets (full phrases)
+  skills          String[] // explicit required skills/tech, e.g. ["React", "Node.js"]
+  matchedSkills   String[] // computed: skills ∩ UserProfile.skills (empty until a profile exists)
+  gapSkills       String[] // computed: skills not in UserProfile.skills
   appliedDate     DateTime @default(now())
   followUpDate    DateTime?
   deadlineDate    DateTime?
@@ -26,6 +35,7 @@ model Application {
   updatedAt       DateTime @updatedAt
 
   @@index([userId])
+  @@index([statusId])
 }
 
 // User-defined, fully dynamic — not a fixed enum.
@@ -48,11 +58,13 @@ model StatusStage {
 model StatusEvent {
   id            String      @id @default(cuid())
   applicationId String
-  application   Application @relation(fields: [applicationId], references: [id])
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   statusId      String
   status        StatusStage @relation(fields: [statusId], references: [id])
   note          String?     // optional context, e.g. "via email from JobStreet"
   occurredAt    DateTime    @default(now())
+
+  @@index([applicationId])
 }
 
 enum Source {
@@ -63,6 +75,19 @@ enum Source {
   JOBSTREET
   DIRECT
   OTHER
+}
+
+enum WorkArrangement {
+  REMOTE
+  HYBRID
+  ONSITE
+}
+
+enum EmploymentType {
+  FULLTIME
+  PARTTIME
+  CONTRACT
+  INTERNSHIP
 }
 
 model UserProfile {
@@ -96,8 +121,9 @@ model UserProfile {
   cvParseStatus   CvParseStatus @default(NONE) // tracks the async extraction lifecycle
 
   // --- Reusable application answers ---
-  templateAnswers Json     // key-value: { "why_interested": "...", "salary_expectation": "..." }
+  templateAnswers Json     @default("{}") // key-value: { "why_interested": "...", "salary_expectation": "..." }
 
+  createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
 
@@ -122,6 +148,8 @@ model WorkExperience {
   description   String?  @db.Text // responsibilities/achievements
   skillsUsed    String[] // skills the AI associated with this role
   order         Int      @default(0) // display order (most recent first)
+
+  @@index([profileId])
 }
 
 // One row per degree/program. AI-extracted, user-editable.
@@ -136,8 +164,17 @@ model Education {
   endDate       String?
   description   String?  @db.Text
   order         Int      @default(0)
+
+  @@index([profileId])
 }
 ```
+
+## Package & client (`@repo/database`)
+
+- **Generator:** Prisma 7's `prisma-client` generator emits TypeScript into `src/generated/prisma/` (gitignored — regenerated via `prisma generate`). `moduleFormat = "cjs"`, `runtime = "nodejs"`.
+- **Entry point:** `src/index.ts` exports a `prisma` singleton (reused across dev hot-reloads) plus a `export *` of all generated models, enums (`Source`, `WorkArrangement`, `EmploymentType`, `CvParseStatus`), and the `Prisma` namespace. Import everything from `@repo/database`.
+- **Driver adapter:** the runtime `PrismaClient` connects through `@prisma/adapter-pg` (`pg`) using the **pooled** `DATABASE_URL` (Supabase PgBouncer). Prisma Migrate / CLI uses the **direct** `DIRECT_URL` (port 5432) via `prisma.config.ts`.
+- **Build:** `prisma generate && tsc -b -v` → `dist/` (CJS + `.d.ts`), so the `tsc`-built NestJS API consumes it as an ordinary compiled dependency. Scripts: `generate`, `build`, `dev`, `db:push`, `db:migrate`, `db:studio`.
 
 **Default seeded stages** — seeded per user on first sign-up/profile creation (user can rename, reorder, add, or delete any of these):
 1. Applied

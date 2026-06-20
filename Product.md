@@ -1,4 +1,4 @@
-# TrackJob — Product
+# ApplyWise — Product
 
 ## Project Overview
 A personal job application tracker built for the Pixel8Labs take-home assessment. Solves a real problem: tracking 15+ concurrent job applications scattered across WhatsApp, email, Glints, and LinkedIn, with AI-assisted extraction, skill matching, and follow-up tracking.
