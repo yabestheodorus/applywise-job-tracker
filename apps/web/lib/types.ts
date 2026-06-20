@@ -149,6 +149,24 @@ export type StatusSuggestion = {
   event: ScheduledEventInput | null;
 };
 
+/** A reusable answer to a common application question (copy-to-clipboard). */
+export type Template = {
+  id: string;
+  topic: string;
+  question: string;
+  answer: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** AI draft from a pasted form: matchedId set → updates that template, else new. */
+export type TemplateDraft = {
+  matchedId: string | null;
+  topic: string;
+  question: string;
+  answer: string;
+};
+
 export type CvParseStatus = 'NONE' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 
 export type ProfileLinks = {

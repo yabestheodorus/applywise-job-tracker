@@ -19,7 +19,10 @@ export function KanbanLane({
           style={{ backgroundColor: stage.color }}
         />
         <h2 className="font-heading text-sm">{stage.label}</h2>
-        <span className="text-muted-foreground text-xs tabular-nums">
+        <span
+          className="inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-medium tabular-nums"
+          style={{ backgroundColor: `${stage.color}1A`, color: stage.color }}
+        >
           {apps.length}
         </span>
         <Button

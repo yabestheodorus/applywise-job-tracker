@@ -20,7 +20,7 @@ These are **two distinct flows** with separate UIs — creating an application a
 **C. Manage profile** (profile page)
 - **Upload a CV (PDF/DOCX)** → backend extracts text and calls Groq to auto-populate identity, summary, skills, work experience, education, certifications, and languages. User reviews the extracted draft, edits anything, and confirms before it's saved (same "AI-draft → review → confirm" pattern as application extraction).
 - Manually manage skills, work experience, and education rows (add/edit/delete) without a CV
-- Manage custom stages and reusable template answers (copy-to-clipboard)
+- Manage custom stages and **reusable template answers**: paste a filled-in application form → AI extracts each question→answer pair into a `Template` (and *updates* the matching existing answer instead of creating a near-duplicate when a similar question recurs); copy any answer to clipboard when filling out the next application. Manual add/edit/delete too.
 - A richer profile → better skill matching: extracted skills + per-role `skillsUsed` feed the application skill-match step
 
 **Shared views**

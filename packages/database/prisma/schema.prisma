@@ -159,11 +159,25 @@ model UserProfile {
   cvUploadedAt  DateTime?
   cvParseStatus CvParseStatus @default(NONE)
 
-  // Reusable application answers
-  templateAnswers Json @default("{}")
-
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// Reusable answers to common application questions. The user pastes a
+// filled-in application form; the AI extracts question→answer pairs and either
+// creates a new Template or updates the existing one covering the same topic
+// (so similar questions don't pile up duplicates). Copy-to-clipboard when
+// filling out the next application.
+model Template {
+  id        String   @id @default(cuid())
+  userId    String // owner (Supabase auth UUID)
+  topic     String   @default("Others") // short 1–2 word grouping label, e.g. "Salary", "Experience"
+  question  String // the application question, normalised, e.g. "Why do you want to work here?"
+  answer    String // the user's reusable answer
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 enum CvParseStatus {

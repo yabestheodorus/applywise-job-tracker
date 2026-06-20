@@ -151,9 +151,6 @@ model UserProfile {
   cvUploadedAt    DateTime?
   cvParseStatus   CvParseStatus @default(NONE) // tracks the async extraction lifecycle
 
-  // --- Reusable application answers ---
-  templateAnswers Json     @default("{}") // key-value: { "why_interested": "...", "salary_expectation": "..." }
-
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
@@ -163,6 +160,23 @@ enum CvParseStatus {
   PROCESSING  // upload received, extraction in progress
   COMPLETED   // structured data extracted and merged into profile
   FAILED      // extraction failed (corrupt file, unreadable, AI/parse error)
+}
+
+// Reusable answers to common application questions. The user pastes a filled-in
+// application form; AI extracts question→answer pairs and either creates a new
+// Template or updates the existing one on the same topic (no duplicates).
+// Copy-to-clipboard when filling out the next application.
+// (Superseded the earlier UserProfile.templateAnswers Json blob.)
+model Template {
+  id        String   @id @default(cuid())
+  userId    String   // owner (Supabase auth UUID)
+  topic     String   @default("Others") // short 1–2 word group label (AI-chosen), e.g. "Salary" — drives the filter pills
+  question  String   // normalised, reusable phrasing, e.g. "Why do you want to work at this company?"
+  answer    String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 // One row per job/role on the CV. AI-extracted, fully user-editable afterward.

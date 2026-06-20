@@ -155,10 +155,8 @@ export function ProfileForm({ profile }: { profile: ProfileResponse }) {
         toast.error(res.error);
         return;
       }
-      console.log(form.state.values);
       form.reset(toFormValues(res.data));
       form.validateAllFields('change');
-      console.log(form.state.values);
       toast.success('CV extracted — review and save');
     });
   }

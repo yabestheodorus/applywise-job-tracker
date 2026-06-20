@@ -9,6 +9,7 @@ import { CommonModule } from './common/common.module';
 import { EventsModule } from './events/events.module';
 import { ProfileModule } from './profile/profile.module';
 import { StagesModule } from './stages/stages.module';
+import { TemplatesModule } from './templates/templates.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { StagesModule } from './stages/stages.module';
     ApplicationsModule,
     ProfileModule,
     EventsModule,
+    TemplatesModule,
   ],
   controllers: [AppController],
   providers: [
