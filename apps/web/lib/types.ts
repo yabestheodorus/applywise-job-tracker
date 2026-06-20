@@ -72,6 +72,7 @@ export type StatusEvent = {
   id: string;
   statusId: string;
   note: string | null;
+  rawText: string | null; // the pasted update, cleaned + markdown-formatted by the LLM
   occurredAt: string;
   status: StatusStage;
 };
@@ -144,6 +145,7 @@ export type StatusSuggestion = {
   newStageLabel: string | null;
   note: string | null;
   confidence: StatusConfidence;
+  formattedMessage: string | null;
   event: ScheduledEventInput | null;
 };
 

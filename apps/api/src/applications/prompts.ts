@@ -68,6 +68,7 @@ Return ONLY a valid JSON object — no markdown, no commentary — with exactly 
   "newStageLabel": string | null,// a concise Title-Case label for a NEW stage if nothing fits, else null
   "note": string | null,         // one short neutral sentence summarising what happened, for the timeline
   "confidence": "high" | "medium" | "low",
+  "formattedMessage": string | null, // the original message, cleaned and re-formatted as readable Markdown
   "event": {                     // a scheduled event IF the message states a specific date/time, else null
     "title": string,             // short label, e.g. "Technical interview", "Take-home assessment due"
     "type": "INTERVIEW" | "ASSESSMENT" | "DEADLINE" | "FOLLOWUP" | "OTHER",
@@ -81,6 +82,7 @@ Rules:
 - Never set both "stageId" and "newStageLabel"; if truly unsure, pick the closest existing stage with "confidence": "low".
 - The message language may be Indonesian or English — interpret either. e.g. "Lamaranmu sedang direview" → a review/screening stage; "Kami mengundang Anda untuk interview" → an interview stage; "mohon maaf, kami memutuskan untuk melanjutkan dengan kandidat lain" → a rejected stage.
 - "note": factual, ≤140 chars, no salutations. Use null only if the message carries no information.
+- "formattedMessage": reformat the ORIGINAL message into clean, readable Markdown — keep it in its original language and DO NOT add, remove, or invent any information. Turn run-on text into short paragraphs separated by a blank line, turn listy content into "- " bullet points, and you may bold a key label with **like this**. Strip email signatures, quoted reply chains, tracking junk, and repeated whitespace. If the message is already a single short sentence, return it as one line. Never wrap the output in code fences.
 - "event": set ONLY when the message gives a concrete date (and ideally a time). Resolve relative dates ("besok", "next Monday", "in 3 days", "Jumat ini") against "now". If a date is given but no time, use "09:00". If NO specific date is stated, "event" MUST be null — never invent a schedule.
 - "type": INTERVIEW for interviews/calls, ASSESSMENT for tests/take-homes/coding challenges, DEADLINE for submission/response cut-offs, FOLLOWUP for "we'll get back to you by"/reminders, OTHER otherwise.
 - Output JSON only.`;

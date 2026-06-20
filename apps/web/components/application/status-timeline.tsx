@@ -1,3 +1,4 @@
+import { MessagePreview } from './message-preview';
 import type { StatusEvent } from '@/lib/types';
 
 function formatWhen(iso: string): string {
@@ -5,6 +6,16 @@ function formatWhen(iso: string): string {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
+  });
+}
+
+function formatWhenFull(iso: string): string {
+  return new Date(iso).toLocaleString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
@@ -40,6 +51,15 @@ export function StatusTimeline({ events }: { events: StatusEvent[] }) {
             </div>
             {event.note ? (
               <p className="text-muted-foreground mt-0.5 text-sm">{event.note}</p>
+            ) : null}
+            {event.rawText ? (
+              <MessagePreview
+                text={event.rawText}
+                stageLabel={event.status.label}
+                stageColor={event.status.color}
+                when={formatWhenFull(event.occurredAt)}
+                note={event.note}
+              />
             ) : null}
           </div>
         </li>

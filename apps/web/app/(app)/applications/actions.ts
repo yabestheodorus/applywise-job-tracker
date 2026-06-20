@@ -106,7 +106,7 @@ export async function extractStatusUpdate(
 export type UpdateStatusInput = (
   | { statusId: string; note?: string | null }
   | { newStageLabel: string; note?: string | null }
-) & { event?: ScheduledEventInput | null };
+) & { rawText?: string | null; event?: ScheduledEventInput | null };
 
 /** Flow B step 3: apply the confirmed stage change. Revalidates board + detail. */
 export async function updateApplicationStatus(

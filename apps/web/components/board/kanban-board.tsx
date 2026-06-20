@@ -1,5 +1,4 @@
-import { KanbanColumn } from './kanban-column';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { KanbanLane } from './kanban-lane';
 import type { Application, StatusStage } from '@/lib/types';
 
 export function KanbanBoard({
@@ -10,17 +9,14 @@ export function KanbanBoard({
   applications: Application[];
 }) {
   return (
-    <ScrollArea className="w-full">
-      <div className="flex gap-4 px-6 pb-6">
-        {stages.map((stage) => (
-          <KanbanColumn
-            key={stage.id}
-            stage={stage}
-            apps={applications.filter((a) => a.statusId === stage.id)}
-          />
-        ))}
-      </div>
-      <ScrollBar orientation="horizontal" />
-    </ScrollArea>
+    <div className="flex flex-col gap-4">
+      {stages.map((stage) => (
+        <KanbanLane
+          key={stage.id}
+          stage={stage}
+          apps={applications.filter((a) => a.statusId === stage.id)}
+        />
+      ))}
+    </div>
   );
 }

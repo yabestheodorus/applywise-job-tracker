@@ -83,6 +83,7 @@ export const statusSuggestionSchema = z.object({
   newStageLabel: z.string().nullable().default(null),
   note: z.string().nullable().default(null),
   confidence: z.enum(['high', 'medium', 'low']).catch('medium').default('medium'),
+  formattedMessage: z.string().nullable().default(null),
   event: scheduledEventInputSchema
     .nullable()
     .catch(null)
@@ -99,6 +100,7 @@ export const updateStatusSchema = z
     statusId: z.string().optional(),
     newStageLabel: z.string().min(1).optional(),
     note: z.string().nullable().optional(),
+    rawText: z.string().nullable().optional(),
     event: scheduledEventInputSchema.nullable().optional(),
   })
   .refine((v) => Boolean(v.statusId) !== Boolean(v.newStageLabel), {

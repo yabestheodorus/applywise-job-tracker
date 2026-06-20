@@ -57,6 +57,7 @@ export function StatusUpdatePanel({
   const [choice, setChoice] = useState<string>(currentStageId);
   const [newStageLabel, setNewStageLabel] = useState('');
   const [note, setNote] = useState('');
+  const [formatted, setFormatted] = useState(''); // LLM-cleaned markdown of the message
   // Optional time-flagged event (AI-suggested or added by hand).
   const [hasEvent, setHasEvent] = useState(false);
   const [eventTitle, setEventTitle] = useState('');
@@ -83,6 +84,7 @@ export function StatusUpdatePanel({
         setNewStageLabel(s.newStageLabel);
       }
       setNote(s.note ?? '');
+      setFormatted(s.formattedMessage ?? '');
       if (s.event) {
         setHasEvent(true);
         setEventTitle(s.event.title);
@@ -114,12 +116,14 @@ export function StatusUpdatePanel({
       hasEvent && eventTitle.trim() && eventAt
         ? { title: eventTitle.trim(), type: eventType, scheduledAt: eventAt }
         : null;
+    // Persist the LLM-formatted message (fall back to the raw paste).
+    const rawText = formatted.trim() || message.trim() || null;
     startSubmit(async () => {
       const res = await updateApplicationStatus(
         applicationId,
         creatingNew
-          ? { newStageLabel: newStageLabel.trim(), note: note.trim() || null, event }
-          : { statusId: choice, note: note.trim() || null, event },
+          ? { newStageLabel: newStageLabel.trim(), note: note.trim() || null, rawText, event }
+          : { statusId: choice, note: note.trim() || null, rawText, event },
       );
       if (!res.ok) {
         toast.error(res.error);
@@ -130,6 +134,7 @@ export function StatusUpdatePanel({
       setSuggested(false);
       setConfidence(null);
       setNote('');
+      setFormatted('');
       setHasEvent(false);
       setEventTitle('');
       setEventType('OTHER');
@@ -235,14 +240,14 @@ export function StatusUpdatePanel({
                     placeholder="Technical interview"
                   />
                 </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-3">
                   <div className="flex flex-col gap-1.5">
                     <Label htmlFor="eventType">Type</Label>
                     <Select
                       value={eventType}
                       onValueChange={(v) => setEventType(v as ScheduledEventType)}
                     >
-                      <SelectTrigger id="eventType">
+                      <SelectTrigger id="eventType" className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -261,6 +266,7 @@ export function StatusUpdatePanel({
                       type="datetime-local"
                       value={eventAt}
                       onChange={(e) => setEventAt(e.target.value)}
+                      className="w-full"
                     />
                   </div>
                 </div>

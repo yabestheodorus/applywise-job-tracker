@@ -1,11 +1,13 @@
 import { KanbanBoard } from '@/components/board/kanban-board';
+import { UpcomingPanel } from '@/components/board/upcoming-panel';
 import { apiFetch } from '@/lib/api/server';
-import type { Application, StatusStage } from '@/lib/types';
+import type { Application, StatusStage, UpcomingEvent } from '@/lib/types';
 
 export default async function BoardPage() {
-  const [stages, applications] = await Promise.all([
+  const [stages, applications, events] = await Promise.all([
     apiFetch<StatusStage[]>('/stages'),
     apiFetch<Application[]>('/applications'),
+    apiFetch<UpcomingEvent[]>('/events'),
   ]);
 
   return (
@@ -17,7 +19,14 @@ export default async function BoardPage() {
           new one with AI.
         </p>
       </div>
-      <KanbanBoard stages={stages} applications={applications} />
+      <div className="flex gap-6 px-6 pb-6">
+        <div className="min-w-0 flex-1">
+          <KanbanBoard stages={stages} applications={applications} />
+        </div>
+        <aside className="hidden w-80 shrink-0 xl:block">
+          <UpcomingPanel events={events} />
+        </aside>
+      </div>
     </div>
   );
 }

@@ -1,9 +1,10 @@
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { ApplicationCard } from './application-card';
 import type { Application, StatusStage } from '@/lib/types';
 
-export function KanbanColumn({
+export function KanbanLane({
   stage,
   apps,
 }: {
@@ -11,8 +12,8 @@ export function KanbanColumn({
   apps: Application[];
 }) {
   return (
-    <section className="bg-muted/40 flex w-80 shrink-0 flex-col rounded-xl">
-      <header className="flex items-center gap-2 px-3 py-2.5">
+    <section className="bg-muted/40 flex flex-col gap-2 rounded-xl p-3">
+      <header className="flex items-center gap-2 px-1">
         <span
           className="size-2.5 rounded-full"
           style={{ backgroundColor: stage.color }}
@@ -31,17 +32,22 @@ export function KanbanColumn({
         </Button>
       </header>
 
-      <div className="flex flex-col gap-3 px-3 pb-3">
-        {apps.length === 0 ? (
-          <div className="text-muted-foreground rounded-lg border border-dashed py-8 text-center text-xs">
-            Nothing here yet
+      {apps.length === 0 ? (
+        <div className="text-muted-foreground rounded-lg border border-dashed py-6 text-center text-xs">
+          Nothing here yet
+        </div>
+      ) : (
+        <ScrollArea className="w-full">
+          <div className="flex gap-3 pb-2">
+            {apps.map((app) => (
+              <div key={app.id} className="w-72 shrink-0">
+                <ApplicationCard app={app} stage={stage} />
+              </div>
+            ))}
           </div>
-        ) : (
-          apps.map((app) => (
-            <ApplicationCard key={app.id} app={app} stage={stage} />
-          ))
-        )}
-      </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      )}
     </section>
   );
 }

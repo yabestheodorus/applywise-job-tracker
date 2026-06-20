@@ -119,14 +119,14 @@ export function ApplicationEvents({
               placeholder="Technical interview"
             />
           </div>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="newEventType">Type</Label>
               <Select
                 value={type}
                 onValueChange={(v) => setType(v as ScheduledEventType)}
               >
-                <SelectTrigger id="newEventType">
+                <SelectTrigger id="newEventType" className="w-full">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -145,6 +145,7 @@ export function ApplicationEvents({
                 type="datetime-local"
                 value={at}
                 onChange={(e) => setAt(e.target.value)}
+                className="w-full"
               />
             </div>
           </div>

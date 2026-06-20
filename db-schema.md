@@ -62,7 +62,8 @@ model StatusEvent {
   application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   statusId      String
   status        StatusStage @relation(fields: [statusId], references: [id])
-  note          String?     // optional context, e.g. "via email from JobStreet"
+  note          String?     // short one-line summary for the timeline row
+  rawText       String?     // the pasted update message, cleaned + Markdown-formatted by the LLM
   occurredAt    DateTime    @default(now())
 
   @@index([applicationId])

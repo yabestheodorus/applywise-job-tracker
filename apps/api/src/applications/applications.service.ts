@@ -142,7 +142,7 @@ export class ApplicationsService {
       data: {
         statusId,
         statusHistory: {
-          create: { statusId, note: dto.note ?? null },
+          create: { statusId, note: dto.note ?? null, rawText: dto.rawText ?? null },
         },
         ...(dto.event
           ? {
