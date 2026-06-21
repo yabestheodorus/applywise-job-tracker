@@ -39,9 +39,9 @@ These are **two distinct flows** with separate UIs — creating an application a
 
 ---
 
-## Planned Feature: Interview Training Session (proposed — not yet built)
+## Feature: Interview Training Session (built — Text MVP + live mock)
 
-> Status: **plan only**. This section describes intended behavior so it can be reviewed before implementation. Nothing here is shipped yet. Chosen scope: **Text MVP + live conversational mock**.
+> Status: **built** on the `feature/interview-training-session` branch (`turbo run build` green). Scope shipped: **Text MVP + live conversational mock**. One caveat — the Prisma **migration is not yet applied** (`prisma migrate dev --name add_interview_sessions`), so it won't run against the DB until that's done. See the Decision Log in CLAUDE.md and the per-area docs (db-schema / agents / code-structure).
 
 ### The one job
 Tie a focused prep session to **one Application** so that, by the end, the jobseeker walks in with *loaded answers in their mind* — not a document they read once, but a small set of memorized, rehearsed talking points they can deliver under pressure.

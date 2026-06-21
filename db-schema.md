@@ -212,7 +212,72 @@ model Education {
 
   @@index([profileId])
 }
+
+// Interview Training Session — AI-driven prep tied to ONE Application. See
+// Product.md → "Interview Training Session" and agents.md.
+model InterviewSession {
+  id             String                 @id @default(cuid())
+  userId         String
+  applicationId  String
+  application    Application            @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  status         InterviewSessionStatus @default(IN_PROGRESS)
+  readinessScore Int?                   // 0–100, recomputed as questions are practiced/drilled
+  questions      InterviewQuestion[]
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@index([userId])
+  @@index([applicationId])
+}
+
+model InterviewQuestion {
+  id              String                    @id @default(cuid())
+  userId          String
+  sessionId       String
+  session         InterviewSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  order           Int
+  category        InterviewQuestionCategory @default(BEHAVIORAL)
+  question        String
+  rationale       String?                   // why this is likely to be asked
+  talkingPoints   String[]                  // AI-seeded hints from the user's real experience
+  userAnswer      String?                   // the user's attempt
+  feedback        String?                   // AI coaching on the attempt
+  improvedAnswer  String?                   // AI's polished version
+  keyPoints       String[]                  // 3–5 memorable bullets to drill
+  score           Int?                      // 1–5 rubric score from coaching
+  selfRating      Int?                      // 1–5 self-rating from the flashcard drill
+  practiceStatus  InterviewPracticeStatus   @default(NOT_STARTED)
+  savedTemplateId String?                   // set when the polished answer was saved to the Template library
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@index([sessionId])
+  @@index([userId])
+}
+
+enum InterviewSessionStatus {
+  GENERATING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum InterviewQuestionCategory {
+  BEHAVIORAL
+  TECHNICAL
+  ROLE_FIT
+  COMPANY
+  GAP
+  LOGISTICS
+}
+
+enum InterviewPracticeStatus {
+  NOT_STARTED
+  ANSWERED
+  REVIEWED
+}
 ```
+
+> **Migration status:** `InterviewSession` / `InterviewQuestion` are in the schema and `prisma generate` is done, but the **migration is not yet applied** — run `prisma migrate dev --name add_interview_sessions` (needs real `DATABASE_URL` + `DIRECT_URL`).
 
 ## Package & client (`@repo/database`)
 
