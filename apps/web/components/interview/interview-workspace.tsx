@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Dumbbell, MessagesSquare, Layers3 } from 'lucide-react';
 
@@ -31,10 +31,52 @@ export function InterviewWorkspace({
 }) {
   const [questions, setQuestions] = useState<InterviewQuestion[]>(session.questions);
   const [mode, setMode] = useState<Mode>('practice');
-  // Mock state lives here (not in InterviewMock) so switching tabs doesn't reset it.
+  // Mock state lives here (not in InterviewMock) so switching tabs doesn't reset it,
+  // and is mirrored to localStorage so a refresh/crash never loses the transcript.
   const [mockMessages, setMockMessages] = useState<MockMessage[]>([]);
   const [mockStarted, setMockStarted] = useState(false);
   const [mockReview, setMockReview] = useState<MockReview | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+
+  const storageKey = `applywise:interview-mock:${session.id}`;
+
+  // Restore any saved mock transcript for this session on mount.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        const saved = JSON.parse(raw) as {
+          messages?: MockMessage[];
+          started?: boolean;
+          review?: MockReview | null;
+        };
+        if (Array.isArray(saved.messages)) setMockMessages(saved.messages);
+        if (saved.started) setMockStarted(true);
+        if (saved.review) setMockReview(saved.review);
+      }
+    } catch {
+      // ignore corrupt/unavailable storage
+    }
+    setHydrated(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Persist on every change (after the initial restore, so we don't clobber it).
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify({
+          messages: mockMessages,
+          started: mockStarted,
+          review: mockReview,
+        }),
+      );
+    } catch {
+      // ignore storage write failures (quota / private mode)
+    }
+  }, [hydrated, mockMessages, mockStarted, mockReview, storageKey]);
 
   function patchQuestion(updated: InterviewQuestion) {
     setQuestions((qs) => qs.map((q) => (q.id === updated.id ? updated : q)));
