@@ -38,13 +38,13 @@ export function TagInput({
       {value.map((s) => (
         <span
           key={s}
-          className="bg-secondary text-secondary-foreground inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium"
+          className="bg-primary/10 text-primary ring-primary/20 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset"
         >
           {s}
           <button
             type="button"
             onClick={() => onChange(value.filter((x) => x !== s))}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-primary/60 hover:text-primary"
             aria-label={`Remove ${s}`}
           >
             <X className="size-3" />

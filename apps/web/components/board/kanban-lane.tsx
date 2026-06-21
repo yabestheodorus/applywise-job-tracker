@@ -12,7 +12,10 @@ export function KanbanLane({
   apps: Application[];
 }) {
   return (
-    <section className="bg-muted/40 flex flex-col gap-2 rounded-xl p-3">
+    <section
+      className="border-border bg-muted/60 flex flex-col gap-2 rounded-xl border border-l-[3px] p-3 shadow-sm"
+      style={{ borderLeftColor: stage.color }}
+    >
       <header className="flex items-center gap-2 px-1">
         <span
           className="size-2.5 rounded-full"

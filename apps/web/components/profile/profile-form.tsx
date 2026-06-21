@@ -1,10 +1,33 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
+import { useRef, useState, useTransition, type ComponentType } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from '@tanstack/react-form';
 import type { StandardSchemaV1 } from '@standard-schema/spec';
-import { FileUp, Loader2, Plus, Sparkles, Trash2 } from 'lucide-react';
+import {
+  AlignLeft,
+  BookOpen,
+  Briefcase,
+  Building2,
+  Calendar,
+  CalendarClock,
+  FileUp,
+  Globe,
+  GraduationCap,
+  IdCard,
+  Link2,
+  Loader2,
+  Mail,
+  MapPin,
+  Phone,
+  Plus,
+  Sparkles,
+  Tags,
+  Trash2,
+  UserRound,
+  type LucideIcon,
+} from 'lucide-react';
+import { FaGithub, FaLinkedin } from 'react-icons/fa6';
 import { toast } from 'sonner';
 import { updateProfileSchema, type UpdateProfileInput } from '@repo/api';
 
@@ -173,7 +196,9 @@ export function ProfileForm({ profile }: { profile: ProfileResponse }) {
       {/* CV upload */}
       <section className="bg-muted/30 flex flex-col gap-3 rounded-xl border border-dashed p-5 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-start gap-3">
-          <FileUp className="text-muted-foreground mt-0.5 size-5 shrink-0" />
+          <span className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-lg">
+            <FileUp className="size-4" />
+          </span>
           <div>
             <p className="text-sm font-medium">Import from your CV</p>
             <p className="text-muted-foreground text-xs">
@@ -214,29 +239,33 @@ export function ProfileForm({ profile }: { profile: ProfileResponse }) {
       </section>
 
       {/* Identity */}
-      <section className="flex flex-col gap-4">
-        <h2 className="font-heading text-lg">Basics</h2>
+      <section className="bg-card flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
+        <SectionHeader icon={UserRound} title="Basics" />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Text form={form} name="fullName" label="Full name" />
-          <Text form={form} name="headline" label="Headline" placeholder="Senior Frontend Engineer" />
-          <Text form={form} name="email" label="Email" />
-          <Text form={form} name="phone" label="Phone" />
-          <Text form={form} name="location" label="Location" placeholder="Jakarta, Indonesia" />
+          <Text form={form} name="fullName" label="Full name" icon={UserRound} />
+          <Text form={form} name="headline" label="Headline" placeholder="Senior Frontend Engineer" icon={IdCard} />
+          <Text form={form} name="email" label="Email" icon={Mail} />
+          <Text form={form} name="phone" label="Phone" icon={Phone} />
+          <Text form={form} name="location" label="Location" placeholder="Jakarta, Indonesia" icon={MapPin} />
           <form.Field name="yearsExperience">
             {(field) => (
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="yearsExperience">Years of experience</Label>
-                <Input
-                  id="yearsExperience"
-                  type="number"
-                  min={0}
-                  value={field.state.value ?? ''}
-                  onChange={(e) =>
-                    field.handleChange(
-                      e.target.value === '' ? null : Number(e.target.value),
-                    )
-                  }
-                />
+                <div className="relative">
+                  <CalendarClock className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                  <Input
+                    id="yearsExperience"
+                    type="number"
+                    min={0}
+                    className="pl-9"
+                    value={field.state.value ?? ''}
+                    onChange={(e) =>
+                      field.handleChange(
+                        e.target.value === '' ? null : Number(e.target.value),
+                      )
+                    }
+                  />
+                </div>
               </div>
             )}
           </form.Field>
@@ -245,32 +274,35 @@ export function ProfileForm({ profile }: { profile: ProfileResponse }) {
           {(field) => (
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="summary">Summary</Label>
-              <Textarea
-                id="summary"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                className="max-h-48 min-h-20 overflow-y-auto"
-                placeholder="A short professional summary."
-              />
+              <div className="relative">
+                <AlignLeft className="text-muted-foreground pointer-events-none absolute top-3 left-3 size-4" />
+                <Textarea
+                  id="summary"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  className="max-h-48 min-h-20 overflow-y-auto pl-9"
+                  placeholder="A short professional summary."
+                />
+              </div>
             </div>
           )}
         </form.Field>
       </section>
 
       {/* Links */}
-      <section className="flex flex-col gap-4">
-        <h2 className="font-heading text-lg">Links</h2>
+      <section className="bg-card flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
+        <SectionHeader icon={Link2} title="Links" />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <Text form={form} name="links.linkedin" label="LinkedIn" />
-          <Text form={form} name="links.github" label="GitHub" />
-          <Text form={form} name="links.portfolio" label="Portfolio" />
-          <Text form={form} name="links.website" label="Website" />
+          <Text form={form} name="links.linkedin" label="LinkedIn" icon={FaLinkedin} />
+          <Text form={form} name="links.github" label="GitHub" icon={FaGithub} />
+          <Text form={form} name="links.portfolio" label="Portfolio" icon={Briefcase} />
+          <Text form={form} name="links.website" label="Website" icon={Globe} />
         </div>
       </section>
 
       {/* Skills / certs / languages */}
-      <section className="flex flex-col gap-4">
-        <h2 className="font-heading text-lg">Skills &amp; languages</h2>
+      <section className="bg-card flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
+        <SectionHeader icon={Tags} title="Skills & languages" />
         <form.Field name="skills">
           {(field) => (
             <div className="flex flex-col gap-1.5">
@@ -308,17 +340,15 @@ export function ProfileForm({ profile }: { profile: ProfileResponse }) {
       </section>
 
       {/* Experience */}
-      <section className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-heading text-lg">Experience</h2>
-        </div>
+      <section className="bg-card flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
+        <SectionHeader icon={Briefcase} title="Experience" />
         <form.Field name="experiences" mode="array">
           {(field) => (
             <div className="flex flex-col gap-4">
               {field.state.value.map((_, i) => (
                 <div
                   key={i}
-                  className="relative flex flex-col gap-3 rounded-xl border p-4"
+                  className="bg-muted/40 relative flex flex-col gap-3 rounded-xl border p-4"
                 >
                   <Button
                     type="button"
@@ -331,12 +361,12 @@ export function ProfileForm({ profile }: { profile: ProfileResponse }) {
                     <Trash2 className="size-4" />
                   </Button>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Text form={form} name={`experiences[${i}].title`} label="Title" />
-                    <Text form={form} name={`experiences[${i}].company`} label="Company" />
-                    <Text form={form} name={`experiences[${i}].location`} label="Location" />
+                    <Text form={form} name={`experiences[${i}].title`} label="Title" icon={Briefcase} />
+                    <Text form={form} name={`experiences[${i}].company`} label="Company" icon={Building2} />
+                    <Text form={form} name={`experiences[${i}].location`} label="Location" icon={MapPin} />
                     <div className="grid grid-cols-2 gap-3">
-                      <Text form={form} name={`experiences[${i}].startDate`} label="Start" placeholder="Mar 2021" />
-                      <Text form={form} name={`experiences[${i}].endDate`} label="End" placeholder="Present" />
+                      <Text form={form} name={`experiences[${i}].startDate`} label="Start" placeholder="Mar 2021" icon={Calendar} />
+                      <Text form={form} name={`experiences[${i}].endDate`} label="End" placeholder="Present" icon={Calendar} />
                     </div>
                   </div>
                   <form.Field name={`experiences[${i}].isCurrent`}>
@@ -389,15 +419,15 @@ export function ProfileForm({ profile }: { profile: ProfileResponse }) {
       </section>
 
       {/* Education */}
-      <section className="flex flex-col gap-4">
-        <h2 className="font-heading text-lg">Education</h2>
+      <section className="bg-card flex flex-col gap-4 rounded-xl border p-6 shadow-sm">
+        <SectionHeader icon={GraduationCap} title="Education" />
         <form.Field name="education" mode="array">
           {(field) => (
             <div className="flex flex-col gap-4">
               {field.state.value.map((_, i) => (
                 <div
                   key={i}
-                  className="relative flex flex-col gap-3 rounded-xl border p-4"
+                  className="bg-muted/40 relative flex flex-col gap-3 rounded-xl border p-4"
                 >
                   <Button
                     type="button"
@@ -410,12 +440,12 @@ export function ProfileForm({ profile }: { profile: ProfileResponse }) {
                     <Trash2 className="size-4" />
                   </Button>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Text form={form} name={`education[${i}].institution`} label="Institution" />
-                    <Text form={form} name={`education[${i}].degree`} label="Degree" />
-                    <Text form={form} name={`education[${i}].fieldOfStudy`} label="Field of study" />
+                    <Text form={form} name={`education[${i}].institution`} label="Institution" icon={Building2} />
+                    <Text form={form} name={`education[${i}].degree`} label="Degree" icon={GraduationCap} />
+                    <Text form={form} name={`education[${i}].fieldOfStudy`} label="Field of study" icon={BookOpen} />
                     <div className="grid grid-cols-2 gap-3">
-                      <Text form={form} name={`education[${i}].startDate`} label="Start" />
-                      <Text form={form} name={`education[${i}].endDate`} label="End" />
+                      <Text form={form} name={`education[${i}].startDate`} label="Start" icon={Calendar} />
+                      <Text form={form} name={`education[${i}].endDate`} label="End" icon={Calendar} />
                     </div>
                   </div>
                   <form.Field name={`education[${i}].description`}>
@@ -459,18 +489,30 @@ export function ProfileForm({ profile }: { profile: ProfileResponse }) {
   );
 }
 
+/** Section heading with a leading accent icon. */
+function SectionHeader({ icon: Icon, title }: { icon: LucideIcon; title: string }) {
+  return (
+    <div className="flex items-center gap-2">
+      <Icon className="text-primary size-5 shrink-0" />
+      <h2 className="font-heading text-lg">{title}</h2>
+    </div>
+  );
+}
+
 /** Small labelled text field bound to a (possibly nested) form path. */
 function Text({
   form,
   name,
   label,
   placeholder,
+  icon: Icon,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form: any;
   name: string;
   label: string;
   placeholder?: string;
+  icon?: ComponentType<{ className?: string }>;
 }) {
   const Form = form;
   return (
@@ -479,12 +521,18 @@ function Text({
       {(field: any) => (
         <div className="flex flex-col gap-1.5">
           <Label htmlFor={name}>{label}</Label>
-          <Input
-            id={name}
-            value={field.state.value ?? ''}
-            onChange={(e) => field.handleChange(e.target.value)}
-            placeholder={placeholder}
-          />
+          <div className="relative">
+            {Icon ? (
+              <Icon className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+            ) : null}
+            <Input
+              id={name}
+              value={field.state.value ?? ''}
+              onChange={(e) => field.handleChange(e.target.value)}
+              placeholder={placeholder}
+              className={Icon ? 'pl-9' : undefined}
+            />
+          </div>
         </div>
       )}
     </Form.Field>
