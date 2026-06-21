@@ -36,3 +36,55 @@ These are **two distinct flows** with separate UIs — creating an application a
 - No analytics/reporting dashboard
 - No automatic duplicate-detection — the user always confirms an extracted draft before it's saved
 - CV upload supports text-based PDF/DOCX only — no OCR for scanned/image PDFs (fail gracefully with a clear message)
+
+---
+
+## Planned Feature: Interview Training Session (proposed — not yet built)
+
+> Status: **plan only**. This section describes intended behavior so it can be reviewed before implementation. Nothing here is shipped yet. Chosen scope: **Text MVP + live conversational mock**.
+
+### The one job
+Tie a focused prep session to **one Application** so that, by the end, the jobseeker walks in with *loaded answers in their mind* — not a document they read once, but a small set of memorized, rehearsed talking points they can deliver under pressure.
+
+### Why it fits the app
+Every input already exists, so questions are genuinely tailored rather than generic:
+- `Application.requirements` / `skills` → technical and role-fit questions
+- `Application.gapSkills` → turn weaknesses into *prepared* answers ("how would you ramp up on Kafka?")
+- `UserProfile.workExperiences` → raw material for authentic STAR stories (answers grounded in the user's real history, not invented)
+- `Template` library → pre-fill logistics answers (salary expectation, notice period) and **save polished answers back into it** (reuses the existing model — no duplicate storage)
+- A `ScheduledEvent` of type `INTERVIEW` on the Upcoming agenda → a natural "Prep now" entry point
+
+### Pedagogy (how it actually "loads" answers)
+The session is built around **active recall**, not passive reading:
+1. **Attempt first.** The user answers in their own words *before* seeing any model answer.
+2. **Coach, don't replace.** The AI grades the attempt and gives targeted feedback + an improved version + 3–5 **key points** (memorable bullets, not paragraphs).
+3. **Compress, then drill.** A flashcard loop shows the question, the user recalls out loud / from memory, then reveals the key points and self-rates. Weak ones repeat. This drill is the step that makes answers stick.
+
+### User flow
+**1. Start a session** (button on the Application detail page; also surfaced on Upcoming `INTERVIEW` events)
+- AI generates a balanced question set tailored to this job + this candidate, across categories: **Behavioral** (STAR, tied to required competencies), **Technical** (the named skills), **Role-fit**, **Company** ("why us / why this role"), **Gap** (probing the `gapSkills`), **Logistics** (salary, notice — pre-filled from existing templates where available). Each question carries a short *rationale* (why it'll likely be asked) and AI-seeded talking points drawn from the user's real experience.
+- User reviews the set, can remove or regenerate questions, then begins.
+
+**2. Practice mode** (one question at a time)
+- User types an answer → "Get coaching" → AI returns a **score (1–5)**, **feedback** (what's strong / what to fix), an **improved answer**, and **key points[]**, graded on a category-appropriate rubric (STAR completeness for behavioral, specificity + correctness for technical, etc.).
+- User can edit/accept the improved answer, **save it to their Template library** (one click), mark the question reviewed, and move on. A progress bar tracks coverage.
+
+**3. Live mock interview** (conversational)
+- An optional chat-style mode where the AI plays interviewer for this specific role: it asks a question, the user answers, and the AI asks **dynamic follow-ups** ("how did the other person react?") the way a real interviewer probes — with running, lightweight feedback. Pulls from the same generated question set but lets the conversation breathe.
+
+**4. Recap "cheat sheet"** (the payoff)
+- A single-screen brief: every question → its 3–5 key points, drillable as flashcards (show question → recall → reveal → self-rate; weak ones repeat). A session **readiness score** reflects how many questions were practiced and how they were rated.
+
+### Same guardrails as the rest of the app
+- **AI-draft → review → confirm**: generated questions and improved answers are always editable before anything is saved; nothing is invented about the user's history.
+- Everything is **per-user** and scoped to a single Application.
+- Polished answers flow into the **existing Templates library** rather than a parallel store.
+
+### In scope (first build)
+Tailored question generation; typed attempt → AI coaching (score / feedback / improved answer / key points); save-to-Templates; a live conversational mock with dynamic follow-ups; recap cheat sheet + flashcard drill with a readiness score.
+
+### Out of scope (later)
+- **Voice practice** — speech-to-text answers and delivery feedback (pace, filler words). Text only for now.
+- **Cross-session spaced repetition** — retention drilling lives within a single session, not scheduled across days.
+- **Readiness trend over time** / analytics across multiple sessions or applications.
+- No scraping of real interview questions from external sites — questions are generated from the stored job + profile.
