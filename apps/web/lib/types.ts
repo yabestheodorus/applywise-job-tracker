@@ -167,6 +167,60 @@ export type TemplateDraft = {
   answer: string;
 };
 
+// --- Interview Training Session ---
+
+export type InterviewCategory =
+  | 'BEHAVIORAL'
+  | 'TECHNICAL'
+  | 'ROLE_FIT'
+  | 'COMPANY'
+  | 'GAP'
+  | 'LOGISTICS';
+
+export const INTERVIEW_CATEGORY_LABELS: Record<InterviewCategory, string> = {
+  BEHAVIORAL: 'Behavioral',
+  TECHNICAL: 'Technical',
+  ROLE_FIT: 'Role fit',
+  COMPANY: 'Company',
+  GAP: 'Skill gap',
+  LOGISTICS: 'Logistics',
+};
+
+export type InterviewPracticeStatus = 'NOT_STARTED' | 'ANSWERED' | 'REVIEWED';
+export type InterviewSessionStatus = 'GENERATING' | 'IN_PROGRESS' | 'COMPLETED';
+
+export type InterviewQuestion = {
+  id: string;
+  sessionId: string;
+  order: number;
+  category: InterviewCategory;
+  question: string;
+  rationale: string | null;
+  talkingPoints: string[];
+  userAnswer: string | null;
+  feedback: string | null;
+  improvedAnswer: string | null;
+  keyPoints: string[];
+  score: number | null;
+  selfRating: number | null;
+  practiceStatus: InterviewPracticeStatus;
+  savedTemplateId: string | null;
+};
+
+export type InterviewSession = {
+  id: string;
+  applicationId: string;
+  status: InterviewSessionStatus;
+  readinessScore: number | null;
+  createdAt: string;
+  updatedAt: string;
+  questions: InterviewQuestion[];
+  application: { id: string; company: string; role: string };
+};
+
+/** One turn of the live mock interview transcript. */
+export type MockMessage = { role: 'user' | 'assistant'; content: string };
+
 export type CvParseStatus = 'NONE' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 
 export type ProfileLinks = {

@@ -15,6 +15,11 @@ interface GroqChatResponse {
   choices?: { message?: { content?: string } }[];
 }
 
+export interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
 /**
  * Thin wrapper over Groq's OpenAI-compatible chat completions endpoint. Asks the
  * model for JSON, retries on rate-limit/5xx with backoff, and validates the
@@ -39,7 +44,15 @@ export class GroqService {
     }
     const model = this.config.get<string>('GROQ_MODEL') ?? DEFAULT_MODEL;
 
-    const content = await this.chat(apiKey, model, opts.system, opts.user);
+    const content = await this.complete(
+      apiKey,
+      model,
+      [
+        { role: 'system', content: opts.system },
+        { role: 'user', content: opts.user },
+      ],
+      true,
+    );
 
     let parsed: unknown;
     try {
@@ -62,11 +75,31 @@ export class GroqService {
   }
 
 
-  private async chat(
+  /**
+   * Free-form chat that returns the model's plain-text reply (no JSON mode).
+   * Used by the live mock interview, where the client holds the running
+   * transcript and we just want the interviewer's next turn.
+   */
+  async chatText(opts: {
+    messages: ChatMessage[];
+    temperature?: number;
+  }): Promise<string> {
+    const apiKey = this.config.get<string>('GROQ_API_KEY');
+    if (!apiKey) {
+      throw new ServiceUnavailableException(
+        'AI is not configured (missing GROQ_API_KEY).',
+      );
+    }
+    const model = this.config.get<string>('GROQ_MODEL') ?? DEFAULT_MODEL;
+    return this.complete(apiKey, model, opts.messages, false, opts.temperature);
+  }
+
+  private async complete(
     apiKey: string,
     model: string,
-    system: string,
-    user: string,
+    messages: ChatMessage[],
+    jsonMode: boolean,
+    temperature = 0.1,
   ): Promise<string> {
     let lastError: unknown;
 
@@ -79,12 +112,9 @@ export class GroqService {
         },
         body: JSON.stringify({
           model,
-          temperature: 0.1,
-          response_format: { type: 'json_object' },
-          messages: [
-            { role: 'system', content: system },
-            { role: 'user', content: user },
-          ],
+          temperature,
+          ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
+          messages,
         }),
       });
 

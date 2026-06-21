@@ -23,6 +23,7 @@ model Application {
   status          StatusStage      @relation(fields: [statusId], references: [id])
   statusHistory   StatusEvent[]
   scheduledEvents ScheduledEvent[]
+  interviewSessions InterviewSession[]
   // Job facts (AI-extracted from rawText)
   location        String? // e.g. "South Jakarta, Indonesia"
   workArrangement WorkArrangement?
@@ -203,6 +204,73 @@ model WorkExperience {
   order       Int         @default(0)
 
   @@index([profileId])
+}
+
+// AI-driven interview prep tied to ONE Application. Generates tailored questions
+// from the job + the user's profile, coaches typed answers, and distils each into
+// memorable key points the user drills until the answers are "loaded". See
+// Product.md → "Interview Training Session" and agents.md.
+model InterviewSession {
+  id             String                 @id @default(cuid())
+  userId         String // owner (Supabase auth UUID)
+  applicationId  String
+  application    Application            @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  status         InterviewSessionStatus @default(IN_PROGRESS)
+  readinessScore Int? // 0–100, computed from practiced + self-rated questions
+  questions      InterviewQuestion[]
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+
+  @@index([userId])
+  @@index([applicationId])
+}
+
+// One generated question within a session, plus its practice state.
+model InterviewQuestion {
+  id              String                    @id @default(cuid())
+  userId          String
+  sessionId       String
+  session         InterviewSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  order           Int
+  category        InterviewQuestionCategory @default(BEHAVIORAL)
+  question        String
+  rationale       String? // why this is likely to be asked
+  talkingPoints   String[] // AI-seeded hints (from the user's real experience) to shape an answer
+  // Practice state (filled in as the user works through the session)
+  userAnswer      String? // the user's own attempt
+  feedback        String? // AI coaching on the attempt
+  improvedAnswer  String? // AI's improved version
+  keyPoints       String[] // 3–5 memorable bullets to drill
+  score           Int? // 1–5 rubric score from coaching
+  selfRating      Int? // 1–5 self-rating from the flashcard drill
+  practiceStatus  InterviewPracticeStatus   @default(NOT_STARTED)
+  savedTemplateId String? // set when the polished answer was saved to the Template library
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  @@index([sessionId])
+  @@index([userId])
+}
+
+enum InterviewSessionStatus {
+  GENERATING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum InterviewQuestionCategory {
+  BEHAVIORAL
+  TECHNICAL
+  ROLE_FIT
+  COMPANY
+  GAP
+  LOGISTICS
+}
+
+enum InterviewPracticeStatus {
+  NOT_STARTED
+  ANSWERED
+  REVIEWED
 }
 
 // One row per degree/program. AI-extracted, user-editable.

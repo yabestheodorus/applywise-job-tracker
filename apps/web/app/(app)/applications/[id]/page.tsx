@@ -14,6 +14,7 @@ import { SourceIcon } from '@/components/board/source-icon';
 import { ApplicationEvents } from '@/components/application/application-events';
 import { StatusTimeline } from '@/components/application/status-timeline';
 import { StatusUpdatePanel } from '@/components/application/status-update-panel';
+import { InterviewPrepCard } from '@/components/interview/interview-prep-card';
 import {
   Card,
   CardContent,
@@ -26,6 +27,7 @@ import {
   relativeDays,
   type ApplicationDetail,
   type EmploymentType,
+  type InterviewSession,
   type StatusStage,
   type WorkArrangement,
 } from '@/lib/types';
@@ -52,10 +54,12 @@ export default async function ApplicationDetailPage({
 
   let application: ApplicationDetail;
   let stages: StatusStage[];
+  let interviewSessions: InterviewSession[];
   try {
-    [application, stages] = await Promise.all([
+    [application, stages, interviewSessions] = await Promise.all([
       apiFetch<ApplicationDetail>(`/applications/${id}`),
       apiFetch<StatusStage[]>('/stages'),
+      apiFetch<InterviewSession[]>(`/applications/${id}/interview/sessions`),
     ]);
   } catch (e) {
     if (e instanceof ApiError && e.status === 404) notFound();
@@ -202,8 +206,20 @@ export default async function ApplicationDetailPage({
           ) : null}
         </div>
 
-        {/* Aside: status flow + timeline */}
+        {/* Aside: interview prep + status flow + timeline */}
         <div className="flex flex-col gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Interview prep</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <InterviewPrepCard
+                applicationId={application.id}
+                sessions={interviewSessions}
+              />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Update status</CardTitle>

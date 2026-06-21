@@ -7,6 +7,7 @@ import { ApplicationsModule } from './applications/applications.module';
 import { SupabaseAuthGuard } from './auth/supabase-auth.guard';
 import { CommonModule } from './common/common.module';
 import { EventsModule } from './events/events.module';
+import { InterviewModule } from './interview/interview.module';
 import { ProfileModule } from './profile/profile.module';
 import { StagesModule } from './stages/stages.module';
 import { TemplatesModule } from './templates/templates.module';
@@ -20,6 +21,7 @@ import { TemplatesModule } from './templates/templates.module';
     ProfileModule,
     EventsModule,
     TemplatesModule,
+    InterviewModule,
   ],
   controllers: [AppController],
   providers: [
