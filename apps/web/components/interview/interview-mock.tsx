@@ -202,8 +202,11 @@ export function InterviewMock({
         <div className="border-primary/30 bg-primary/5 flex flex-col gap-3 rounded-xl border p-5">
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold">Interview debrief</p>
-            <span className="bg-primary/15 text-primary inline-flex rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums">
-              {review.score}/5
+            <span
+              className="bg-primary/15 text-primary inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+              title="Overall performance, scored out of 5"
+            >
+              Overall score <span className="tabular-nums">{review.score}/5</span>
             </span>
           </div>
           <p className="text-sm leading-relaxed">{review.summary}</p>

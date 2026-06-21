@@ -162,8 +162,11 @@ export function InterviewPractice({
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold">Coach feedback</p>
             {q.score != null ? (
-              <span className="bg-primary/15 text-primary inline-flex rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums">
-                {q.score}/5
+              <span
+                className="bg-primary/15 text-primary inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold"
+                title="Answer quality, scored out of 5"
+              >
+                Score <span className="tabular-nums">{q.score}/5</span>
               </span>
             ) : null}
           </div>
