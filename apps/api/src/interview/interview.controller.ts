@@ -58,6 +58,15 @@ export class InterviewController {
     return this.interview.mockTurn(userId, id, dto);
   }
 
+  @Post('sessions/:id/mock/review')
+  mockReview(
+    @CurrentUser('id') userId: string,
+    @Param('id') id: string,
+    @Body(new ZodValidationPipe(mockTurnSchema)) dto: MockTurnDto,
+  ) {
+    return this.interview.reviewMock(userId, id, dto);
+  }
+
   @Post('questions/:id/coach')
   coach(
     @CurrentUser('id') userId: string,

@@ -7,7 +7,12 @@ import { ArrowLeft, Dumbbell, MessagesSquare, Layers3 } from 'lucide-react';
 import { InterviewPractice } from './interview-practice';
 import { InterviewMock } from './interview-mock';
 import { InterviewRecap } from './interview-recap';
-import type { InterviewQuestion, InterviewSession } from '@/lib/types';
+import type {
+  InterviewQuestion,
+  InterviewSession,
+  MockMessage,
+  MockReview,
+} from '@/lib/types';
 
 type Mode = 'practice' | 'mock' | 'recap';
 
@@ -26,6 +31,10 @@ export function InterviewWorkspace({
 }) {
   const [questions, setQuestions] = useState<InterviewQuestion[]>(session.questions);
   const [mode, setMode] = useState<Mode>('practice');
+  // Mock state lives here (not in InterviewMock) so switching tabs doesn't reset it.
+  const [mockMessages, setMockMessages] = useState<MockMessage[]>([]);
+  const [mockStarted, setMockStarted] = useState(false);
+  const [mockReview, setMockReview] = useState<MockReview | null>(null);
 
   function patchQuestion(updated: InterviewQuestion) {
     setQuestions((qs) => qs.map((q) => (q.id === updated.id ? updated : q)));
@@ -100,7 +109,15 @@ export function InterviewWorkspace({
       {mode === 'practice' ? (
         <InterviewPractice questions={questions} onUpdate={patchQuestion} />
       ) : mode === 'mock' ? (
-        <InterviewMock sessionId={session.id} />
+        <InterviewMock
+          sessionId={session.id}
+          messages={mockMessages}
+          setMessages={setMockMessages}
+          started={mockStarted}
+          setStarted={setMockStarted}
+          review={mockReview}
+          setReview={setMockReview}
+        />
       ) : (
         <InterviewRecap questions={questions} onUpdate={patchQuestion} />
       )}

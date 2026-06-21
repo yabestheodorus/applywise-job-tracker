@@ -221,6 +221,14 @@ export type InterviewSession = {
 /** One turn of the live mock interview transcript. */
 export type MockMessage = { role: 'user' | 'assistant'; content: string };
 
+/** End-of-mock debrief returned by the AI. */
+export type MockReview = {
+  summary: string;
+  strengths: string[];
+  improvements: string[];
+  score: number;
+};
+
 export type CvParseStatus = 'NONE' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
 
 export type ProfileLinks = {

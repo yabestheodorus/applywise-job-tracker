@@ -115,6 +115,7 @@ POST   /applications/:id/interview/sessions   # generate a tailored question set
 GET    /applications/:id/interview/sessions   # list this application's sessions (with questions + readiness)
 GET    /interview/sessions/:id                # one session (questions ordered)
 POST   /interview/sessions/:id/mock           # body: { messages[] } → one live-mock turn (client holds transcript)
+POST   /interview/sessions/:id/mock/review     # body: { messages[] } → end-of-mock debrief { summary, strengths[], improvements[], score }
 POST   /interview/questions/:id/coach         # body: { userAnswer } → AI score/feedback/improvedAnswer/keyPoints
 PATCH  /interview/questions/:id               # edit answer, self-rating, or practiceStatus (drill loop)
 POST   /interview/questions/:id/save-template # push the polished answer into the Template library

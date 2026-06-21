@@ -7,6 +7,7 @@ import type {
   InterviewQuestion,
   InterviewSession,
   MockMessage,
+  MockReview,
   Template,
 } from '@/lib/types';
 
@@ -104,5 +105,21 @@ export async function mockInterviewTurn(
     return { ok: true, data };
   } catch (e) {
     return { ok: false, error: errorOf(e, 'The interviewer went quiet. Please try again.') };
+  }
+}
+
+/** End the mock and get an overall debrief of how the candidate did. */
+export async function reviewMockInterview(
+  sessionId: string,
+  messages: MockMessage[],
+): Promise<ActionResult<MockReview>> {
+  try {
+    const data = await apiFetch<MockReview>(
+      `/interview/sessions/${sessionId}/mock/review`,
+      { method: 'POST', body: JSON.stringify({ messages }) },
+    );
+    return { ok: true, data };
+  } catch (e) {
+    return { ok: false, error: errorOf(e, 'Could not review the interview. Please try again.') };
   }
 }

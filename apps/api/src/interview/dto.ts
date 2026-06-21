@@ -25,6 +25,14 @@ export const questionGenerationSchema = z.object({
     .min(1),
 });
 
+/** Shape of the end-of-mock review model output. */
+export const mockReviewSchema = z.object({
+  summary: z.string().min(1),
+  strengths: z.array(z.string()).default([]),
+  improvements: z.array(z.string()).default([]),
+  score: z.number().int().min(1).max(5),
+});
+
 /** Shape of the per-answer coaching model output. */
 export const coachSchema = z.object({
   score: z.number().int().min(1).max(5),

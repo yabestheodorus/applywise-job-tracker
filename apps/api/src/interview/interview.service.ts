@@ -5,6 +5,7 @@ import { PrismaService } from '../common/prisma.service';
 import { ProfileService } from '../profile/profile.service';
 import {
   coachSchema,
+  mockReviewSchema,
   questionGenerationSchema,
   type CoachQuestionDto,
   type GenerateSessionDto,
@@ -14,6 +15,7 @@ import {
 } from './dto';
 import {
   INTERVIEW_COACH_SYSTEM_PROMPT,
+  INTERVIEW_MOCK_REVIEW_SYSTEM_PROMPT,
   INTERVIEW_MOCK_SYSTEM_PROMPT,
   INTERVIEW_QUESTION_GENERATION_SYSTEM_PROMPT,
 } from './prompts';
@@ -250,6 +252,28 @@ export class InterviewService {
       ],
     });
     return { reply };
+  }
+
+  /** End-of-mock debrief: review the transcript and return structured feedback. */
+  async reviewMock(userId: string, sessionId: string, dto: MockTurnDto) {
+    const session = await this.findOne(userId, sessionId);
+    if (!dto.messages.some((m) => m.role === 'user')) {
+      throw new NotFoundException('Answer at least one question before reviewing');
+    }
+    const application = await this.prisma.application.findFirst({
+      where: { id: session.applicationId, userId },
+    });
+    if (!application) throw new NotFoundException('Application not found');
+
+    const user = JSON.stringify({
+      job: { role: application.role, skills: application.skills },
+      transcript: dto.messages,
+    });
+    return this.groq.extractJson({
+      system: INTERVIEW_MOCK_REVIEW_SYSTEM_PROMPT,
+      user,
+      schema: mockReviewSchema,
+    });
   }
 
   /**
