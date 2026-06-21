@@ -20,12 +20,19 @@ export default async function UpcomingPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-6">
-      <div className="mb-6">
-        <h1 className="font-heading text-2xl">Upcoming</h1>
-        <p className="text-muted-foreground text-sm">
-          Interviews, assessment deadlines, and follow-ups across all your
-          applications — soonest first.
-        </p>
+      <div className="mb-6 flex items-center gap-3">
+        <span className="bg-primary/10 text-primary flex size-11 shrink-0 items-center justify-center rounded-xl">
+          <CalendarClock className="size-5" />
+        </span>
+        <div>
+          <h1 className="font-heading text-2xl leading-tight tracking-tight">
+            Upcoming
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Interviews, assessment deadlines, and follow-ups across all your
+            applications — soonest first.
+          </p>
+        </div>
       </div>
 
       {events.length === 0 ? (
