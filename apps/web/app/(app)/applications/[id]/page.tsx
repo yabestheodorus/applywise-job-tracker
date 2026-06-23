@@ -85,7 +85,7 @@ export default async function ApplicationDetailPage({
   return (
     <div className="mx-auto max-w-5xl px-6 py-6">
       <Link
-        href="/"
+        href="/board"
         className="text-muted-foreground hover:text-foreground mb-4 inline-flex items-center gap-1.5 text-sm"
       >
         <ArrowLeft className="size-4" />

@@ -80,7 +80,7 @@ export async function createApplication(
       method: 'POST',
       body: JSON.stringify(input),
     });
-    revalidatePath('/');
+    revalidatePath('/board');
     return { ok: true, data: { id: created.id } };
   } catch (e) {
     return { ok: false, error: errorOf(e, 'Could not add application. Please try again.') };
@@ -118,7 +118,7 @@ export async function updateApplicationStatus(
       method: 'PATCH',
       body: JSON.stringify(input),
     });
-    revalidatePath('/');
+    revalidatePath('/board');
     revalidatePath('/upcoming');
     revalidatePath(`/applications/${id}`);
     return { ok: true, data: updated };

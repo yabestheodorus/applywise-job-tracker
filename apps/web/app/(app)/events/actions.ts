@@ -12,7 +12,7 @@ const errorOf = (e: unknown, fallback: string) =>
 
 function revalidateEventViews(applicationId?: string) {
   revalidatePath('/upcoming');
-  revalidatePath('/');
+  revalidatePath('/board');
   if (applicationId) revalidatePath(`/applications/${applicationId}`);
 }
 

@@ -8,7 +8,7 @@ import { CalendarClock, FileText, Layers, LayoutGrid, User } from 'lucide-react'
 import { cn } from '@/lib/utils';
 
 const NAV = [
-  { href: '/', label: 'Board', icon: LayoutGrid },
+  { href: '/board', label: 'Board', icon: LayoutGrid },
   { href: '/upcoming', label: 'Upcoming', icon: CalendarClock },
   { href: '/profile', label: 'Profile', icon: User },
   { href: '/stages', label: 'Stages', icon: Layers },
@@ -32,7 +32,7 @@ export function AppSidebar() {
       </div>
       <nav className="flex flex-col gap-1 px-3 py-2">
         {NAV.map(({ href, label, icon: Icon }) => {
-          const active = href === '/' ? pathname === '/' : pathname.startsWith(href);
+          const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link
               key={href}

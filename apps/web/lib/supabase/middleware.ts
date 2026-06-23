@@ -1,15 +1,18 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
+// `/` is the public marketing landing page; these are the other public paths.
 const PUBLIC_PATHS = ['/login', '/signup', '/auth'];
 
 const isPublicPath = (pathname: string) =>
+  pathname === '/' ||
   PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 
 /**
  * Refreshes the Supabase session on every request (keeps the access token
- * fresh) and gates the app: unauthenticated users are sent to /login, and
- * signed-in users are bounced away from /login and /signup.
+ * fresh) and gates the app: unauthenticated users are sent to /login (except
+ * on public pages like the landing page), and signed-in users are bounced from
+ * the landing/login/signup pages straight to their board.
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -47,9 +50,12 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (user && (pathname === '/login' || pathname === '/signup')) {
+  if (
+    user &&
+    (pathname === '/' || pathname === '/login' || pathname === '/signup')
+  ) {
     const url = request.nextUrl.clone();
-    url.pathname = '/';
+    url.pathname = '/board';
     return NextResponse.redirect(url);
   }
 
