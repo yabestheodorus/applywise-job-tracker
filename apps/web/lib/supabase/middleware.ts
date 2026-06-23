@@ -11,8 +11,8 @@ const isPublicPath = (pathname: string) =>
 /**
  * Refreshes the Supabase session on every request (keeps the access token
  * fresh) and gates the app: unauthenticated users are sent to /login (except
- * on public pages like the landing page), and signed-in users are bounced from
- * the landing/login/signup pages straight to their board.
+ * on public pages like the landing page), and signed-in users are bounced off
+ * /login and /signup. The landing page (`/`) stays viewable by everyone.
  */
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -50,10 +50,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  if (
-    user &&
-    (pathname === '/' || pathname === '/login' || pathname === '/signup')
-  ) {
+  if (user && (pathname === '/login' || pathname === '/signup')) {
     const url = request.nextUrl.clone();
     url.pathname = '/board';
     return NextResponse.redirect(url);

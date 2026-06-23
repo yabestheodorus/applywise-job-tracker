@@ -17,32 +17,46 @@ import {
 import { FaLinkedin, FaWhatsapp } from 'react-icons/fa6';
 import { HiOutlineMail } from 'react-icons/hi';
 
+import { createClient } from '@/lib/supabase/server';
+
 export const metadata: Metadata = {
   title: 'ApplyWise — Track your job hunt without the busywork',
   description:
     'Paste a recruiter message and let AI track the rest: structured applications, status updates, deadlines, skill matching, and AI interview prep — all in one board.',
 };
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const authed = !!user;
+
   return (
     <div className="bg-background text-foreground min-h-screen">
-      <SiteNav />
-      <Hero />
+      <SiteNav authed={authed} />
+      <Hero authed={authed} />
       <SourcesStrip />
       <Problem />
       <Features />
-      <InterviewSpotlight />
+      <InterviewSpotlight authed={authed} />
       <HowItWorks />
       <Differentiator />
-      <FinalCta />
+      <FinalCta authed={authed} />
       <SiteFooter />
     </div>
   );
 }
 
+/** CTA target + label that adapts to whether the visitor is signed in. */
+const cta = (authed: boolean) =>
+  authed
+    ? { href: '/board', label: 'Go to your board' }
+    : { href: '/signup', label: 'Start tracking free' };
+
 /* ----------------------------------------------------------------- Nav */
 
-function SiteNav() {
+function SiteNav({ authed }: { authed: boolean }) {
   return (
     <header className="bg-background/80 sticky top-0 z-20 border-b backdrop-blur">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
@@ -55,19 +69,31 @@ function SiteNav() {
           className="h-7 w-auto dark:brightness-0 dark:invert"
         />
         <nav className="flex items-center gap-2">
-          <Link
-            href="/login"
-            className="text-muted-foreground hover:text-foreground rounded-lg px-4 py-2 text-sm font-medium transition-colors"
-          >
-            Log in
-          </Link>
-          <Link
-            href="/signup"
-            className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition-colors"
-          >
-            Get started
-            <ArrowRight className="size-4" />
-          </Link>
+          {authed ? (
+            <Link
+              href="/board"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition-colors"
+            >
+              Go to your board
+              <ArrowRight className="size-4" />
+            </Link>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="text-muted-foreground hover:text-foreground rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/signup"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium shadow-sm transition-colors"
+              >
+                Get started
+                <ArrowRight className="size-4" />
+              </Link>
+            </>
+          )}
         </nav>
       </div>
     </header>
@@ -76,10 +102,11 @@ function SiteNav() {
 
 /* ---------------------------------------------------------------- Hero */
 
-function Hero() {
+function Hero({ authed }: { authed: boolean }) {
+  const primary = cta(authed);
   return (
     <section className="relative overflow-hidden">
-      <div className="from-primary/10 pointer-events-none absolute inset-0 bg-gradient-to-b via-transparent to-transparent" />
+      <div className="from-primary/10 pointer-events-none absolute inset-0 bg-linear-to-b via-transparent to-transparent" />
       <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 py-20 lg:grid-cols-2 lg:py-28">
         <div>
           <span className="border-primary/20 bg-primary/10 text-primary mb-5 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium">
@@ -97,10 +124,10 @@ function Hero() {
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
-              href="/signup"
+              href={primary.href}
               className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex items-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold shadow-sm transition-colors"
             >
-              Start tracking free
+              {primary.label}
               <ArrowRight className="size-4" />
             </Link>
             <Link
@@ -348,7 +375,7 @@ const PREP_STEPS: { icon: LucideIcon; title: string; desc: string }[] = [
   },
 ];
 
-function InterviewSpotlight() {
+function InterviewSpotlight({ authed }: { authed: boolean }) {
   return (
     <section className="mx-auto max-w-6xl px-6 py-20">
       <div className="grid items-center gap-12 lg:grid-cols-2">
@@ -367,10 +394,10 @@ function InterviewSpotlight() {
             notes, you’re recalling them.
           </p>
           <Link
-            href="/signup"
+            href={authed ? '/board' : '/signup'}
             className="text-primary mt-6 inline-flex items-center gap-1.5 text-sm font-semibold hover:underline"
           >
-            Try interview prep
+            {authed ? 'Open your board' : 'Try interview prep'}
             <ArrowRight className="size-4" />
           </Link>
         </div>
@@ -465,10 +492,11 @@ function Differentiator() {
 
 /* --------------------------------------------------------------- CTA */
 
-function FinalCta() {
+function FinalCta({ authed }: { authed: boolean }) {
+  const primary = cta(authed);
   return (
     <section className="px-6 pb-24">
-      <div className="from-primary/15 mx-auto max-w-5xl rounded-3xl border bg-gradient-to-br via-transparent to-transparent p-10 text-center sm:p-16">
+      <div className="from-primary/15 mx-auto max-w-5xl rounded-3xl border bg-linear-to-br via-transparent to-transparent p-10 text-center sm:p-16">
         <h2 className="font-heading text-3xl tracking-tight sm:text-4xl">
           Take control of your job search
         </h2>
@@ -477,10 +505,10 @@ function FinalCta() {
           interview. Get started in under a minute.
         </p>
         <Link
-          href="/signup"
+          href={primary.href}
           className="bg-primary text-primary-foreground hover:bg-primary/90 mt-8 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold shadow-sm transition-colors"
         >
-          Start tracking free
+          {primary.label}
           <ArrowRight className="size-4" />
         </Link>
       </div>
