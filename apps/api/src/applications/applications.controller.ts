@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 
 import { CurrentUser } from '../auth/current-user.decorator';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
@@ -47,6 +47,23 @@ export class ApplicationsController {
   @Get(':id')
   findOne(@CurrentUser('id') userId: string, @Param('id') id: string) {
     return this.applications.findOne(userId, id);
+  }
+
+  @Delete(':id')
+  remove(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.applications.remove(userId, id);
+  }
+
+  /** Recompute the AI job-match score for this application. */
+  @Post(':id/match')
+  computeMatch(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.applications.computeMatch(userId, id);
+  }
+
+  /** Generate a tailored cover-letter draft (plain text, not persisted). */
+  @Post(':id/cover-letter')
+  coverLetter(@CurrentUser('id') userId: string, @Param('id') id: string) {
+    return this.applications.generateCoverLetter(userId, id);
   }
 
   /** Flow B step 1: Groq suggests which stage a status-update message maps to. */

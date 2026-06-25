@@ -50,6 +50,19 @@ export const extractedDraftSchema = z.object({
 export type ExtractedDraft = z.infer<typeof extractedDraftSchema>;
 
 
+/**
+ * Shape Groq must return for a job-match score. `.catch` keeps a flaky model
+ * response usable: score is clamped/defaulted, arrays degrade to [].
+ */
+export const jobMatchSchema = z.object({
+  score: z.number().min(0).max(100).catch(0).default(0),
+  matchedSkills: z.array(z.string()).catch([]).default([]),
+  gapSkills: z.array(z.string()).catch([]).default([]),
+  rationale: z.string().nullable().catch(null).default(null),
+});
+export type JobMatch = z.infer<typeof jobMatchSchema>;
+
+
 export const scheduledEventTypeEnum = z.enum([
   'INTERVIEW',
   'ASSESSMENT',

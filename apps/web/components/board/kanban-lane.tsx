@@ -13,17 +13,20 @@ export function KanbanLane({
 }) {
   return (
     <section
-      className="border-border bg-muted/60 flex flex-col gap-2 rounded-xl border border-l-[3px] p-3 shadow-sm"
+      className="bg-card/50 shadow-card flex flex-col gap-2 rounded-2xl border border-l-[3px] p-3 backdrop-blur-sm"
       style={{ borderLeftColor: stage.color }}
     >
       <header className="flex items-center gap-2 px-1">
         <span
-          className="size-2.5 rounded-full"
-          style={{ backgroundColor: stage.color }}
+          className="size-2.5 rounded-full ring-2"
+          style={{
+            backgroundColor: stage.color,
+            ['--tw-ring-color' as string]: `${stage.color}33`,
+          }}
         />
-        <h2 className="font-heading text-sm">{stage.label}</h2>
+        <h2 className="font-heading text-sm tracking-tight">{stage.label}</h2>
         <span
-          className="inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-medium tabular-nums"
+          className="inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-semibold tabular-nums"
           style={{ backgroundColor: `${stage.color}1A`, color: stage.color }}
         >
           {apps.length}
@@ -31,7 +34,7 @@ export function KanbanLane({
         <Button
           variant="ghost"
           size="icon"
-          className="text-muted-foreground ml-auto size-7"
+          className="text-muted-foreground hover:text-primary ml-auto size-7"
           aria-label={`Add to ${stage.label}`}
         >
           <Plus className="size-4" />

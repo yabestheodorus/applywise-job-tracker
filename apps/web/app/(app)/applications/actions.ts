@@ -87,6 +87,56 @@ export async function createApplication(
   }
 }
 
+/** Delete an application (cascades its timeline/events/interview sessions). */
+export async function deleteApplication(
+  id: string,
+): Promise<ActionResult<{ id: string }>> {
+  try {
+    const data = await apiFetch<{ id: string }>(`/applications/${id}`, {
+      method: 'DELETE',
+    });
+    revalidatePath('/board');
+    revalidatePath('/upcoming');
+    return { ok: true, data };
+  } catch (e) {
+    return { ok: false, error: errorOf(e, 'Could not delete this application. Please try again.') };
+  }
+}
+
+/** Recompute the AI job-match score. Revalidates board + detail. */
+export async function recalculateMatch(
+  id: string,
+): Promise<ActionResult<{ matchScore: number | null; matchRationale: string | null; matchedSkills: string[]; gapSkills: string[] }>> {
+  try {
+    const updated = await apiFetch<{
+      matchScore: number | null;
+      matchRationale: string | null;
+      matchedSkills: string[];
+      gapSkills: string[];
+    }>(`/applications/${id}/match`, { method: 'POST' });
+    revalidatePath('/board');
+    revalidatePath(`/applications/${id}`);
+    return { ok: true, data: updated };
+  } catch (e) {
+    return { ok: false, error: errorOf(e, 'Could not score this match. Please try again.') };
+  }
+}
+
+/** Generate a tailored cover-letter draft (plain text, not saved). */
+export async function generateCoverLetter(
+  id: string,
+): Promise<ActionResult<{ coverLetter: string }>> {
+  try {
+    const data = await apiFetch<{ coverLetter: string }>(
+      `/applications/${id}/cover-letter`,
+      { method: 'POST' },
+    );
+    return { ok: true, data };
+  } catch (e) {
+    return { ok: false, error: errorOf(e, 'Could not generate a cover letter. Please try again.') };
+  }
+}
+
 /** Flow B step 1: ask the API (→ Groq) which stage a status update maps to. */
 export async function extractStatusUpdate(
   id: string,

@@ -88,3 +88,97 @@ Tailored question generation; typed attempt → AI coaching (score / feedback / 
 - **Cross-session spaced repetition** — retention drilling lives within a single session, not scheduled across days.
 - **Readiness trend over time** / analytics across multiple sessions or applications.
 - No scraping of real interview questions from external sites — questions are generated from the stored job + profile.
+
+---
+
+## Feature: Skills Assessment (built — scenario-MCQ MVP)
+
+> Status: **built** (`turbo run build` green). Shipped per the approved decisions: **MCQ-only** (no open-ended/Phase 2), **12 questions** per test (4 Junior / 5 Mid / 3 Senior), **exam mode**, **one skill per assessment**, **purely profile-skill-focused** (no Application/job involvement). Caveat: the Prisma **migration is not yet applied** (`prisma migrate dev --name add_skill_assessments`) — `prisma generate` is done so the code compiles, but it won't run against the DB until the migration is applied. See the Decision Log in CLAUDE.md.
+
+### The one job
+The skills on a profile are **self-claimed**. This feature lets a jobseeker **prove** a skill to themselves by taking a short, real-world technical test for it — scenarios like the ones they'd actually hit at a real company — and walk away with an honest **proficiency score** per skill, plus a list of the exact sub-topics to shore up before interviews.
+
+### Why it fits the app
+Every input already exists, so tests are calibrated to the person, not generic:
+- `UserProfile.skills[]` → the menu of skills you can be tested on (you test what you claim).
+- `UserProfile.yearsExperience` + `WorkExperience.skillsUsed` / `seniority` cues → **calibrate difficulty** (a senior backend dev gets harder Postgres scenarios than a junior).
+- It closes the loop with the rest of the app: a proven skill is a stronger signal for the **Job-Match score**, and weak sub-topics are exactly what the **Interview Training Session** should drill (future wiring, see Payoff).
+
+### The core design call — question format
+**Recommendation: scenario-based multiple-choice (MCQ), deterministically scored.** Each question sets up a realistic situation at a company and asks for the single best action/answer, with 4 options where the wrong ones are *common real misconceptions* (not obviously silly).
+
+> Example (React): *"A search input re-renders the whole results list on every keystroke and the page janks. The list rarely changes. What's the most effective first fix?"* → options include `useMemo` the list, `React.memo` the row + stable props (correct), `useCallback` everything, debounce state in a `useRef`. Explanation reveals *why*.
+>
+> Example (SQL): *"A reporting query that joins orders→customers times out as the table crosses 10M rows. `EXPLAIN` shows a sequential scan on `orders.customer_id`. Best first move?"*
+
+Why MCQ for the MVP:
+- **Objective, instant, free to grade** — no per-answer LLM call, no subjectivity, a real numeric score.
+- Groq is strong at *generating* plausible scenario stems + distractors + explanations.
+- "Real-world" lives in the **stem**, not the answer format — production incidents, trade-offs, debugging, design choices.
+
+Open-ended "explain your approach" answers (AI-graded, like the interview coach) are richer but slower, costlier, and fuzzier — **Phase 2**, not the MVP.
+
+### What makes it "real world" (the generation contract)
+The generator is told to **only** produce questions framed as concrete situations a working engineer faces: a production bug, a performance cliff, a code-review call, a design trade-off, a "this broke in prod at 2am" scenario. Explicitly **banned**: definition/trivia recall ("what does `useEffect` do?"), syntax memorization, and ambiguous questions with more than one defensible answer. Difficulty is mixed across **Junior / Mid / Senior**, calibrated to the candidate's experience.
+
+### User flow
+**1. Pick a skill to test** (new **Skills** page; also a "Test" affordance on each skill pill in Profile)
+- The Skills page lists the profile's skills as cards, each showing its **latest proficiency** (or "Not tested yet") and a **Start test / Retake** button.
+
+**2. Take the test** (exam mode — answer all, then submit)
+- AI generates ~**8 scenario questions** (e.g. 3 Junior / 3 Mid / 2 Senior) for that one skill.
+- One question per screen: scenario + prompt + 4 radio options, a progress bar, prev/next. No answers are revealed mid-test (the API never sends the correct index until you submit — see Guardrails).
+- **Submit** → graded instantly.
+
+**3. Results + debrief** (the payoff)
+- A **score ring** (% correct) and a **proficiency level** badge: Beginner / Intermediate / Advanced / Expert (derived from score *weighted by question difficulty* — nailing Senior questions counts more).
+- **Per-question review**: your answer vs. the correct one, with the explanation — this is where the learning happens.
+- A short AI **debrief**: 1–2 sentence summary, what you're clearly solid on, and 2–3 **focus areas** (the sub-topics you missed) to study next.
+
+**4. Retake** anytime — generates a fresh set; history is kept so you can see improvement.
+
+### Proposed data model (new `assessments` module)
+- **`SkillAssessment`** — `id`, `userId`, `skill` (string, must be one of the profile's skills at start time), `status` (`AssessmentStatus`), `questionCount`, `correctCount Int?`, `scorePct Int?`, `level ProficiencyLevel?`, `summary String?`, `strengths String[]`, `focusAreas String[]`, `questions[]`, `createdAt`, `completedAt DateTime?`.
+- **`AssessmentQuestion`** — `id`, `assessmentId` (cascade), `userId`, `order`, `difficulty` (`QuestionDifficulty`), `subtopic String?`, `scenario`, `prompt`, `options String[]` (4), `correctIndex Int`, `explanation`, `selectedIndex Int?`, `isCorrect Boolean?`.
+- Enums: `AssessmentStatus { GENERATING, IN_PROGRESS, COMPLETED }`, `QuestionDifficulty { JUNIOR, MID, SENIOR }`, `ProficiencyLevel { BEGINNER, INTERMEDIATE, ADVANCED, EXPERT }`.
+- Additive migration only; nothing on existing models changes (mirrors how `InterviewSession` was added).
+
+### AI prompts (Groq, same `GroqService` patterns)
+- **`SKILL_TEST_GENERATION_SYSTEM_PROMPT`** (JSON via `extractJson` + a Zod schema) — in: `{ skill, candidate: { yearsExperience, seniorityHints, relevantExperience[] }, counts: { junior, mid, senior } }`; out: `{ questions: [{ difficulty, subtopic, scenario, prompt, options[4], correctIndex, explanation }] }`. Enforces: real-world stems only, exactly one best answer, distractors = common misconceptions, no trivia/syntax/ambiguity.
+- **`SKILL_TEST_DEBRIEF_SYSTEM_PROMPT`** (JSON) — in: `{ skill, results: [{ subtopic, difficulty, correct }] }`; out: `{ summary, strengths[], focusAreas[] }`. The LLM only narrates and names focus areas; **the score and level are computed deterministically in the service**, never by the model.
+
+### API endpoints (all `@CurrentUser`-scoped, 404 cross-tenant)
+- `POST /assessments` `{ skill }` → validate the skill is on the profile, create + generate, return the assessment **with answers stripped**.
+- `GET /assessments` → history (grouped by skill, latest first).
+- `GET /assessments/:id` → fetch; `correctIndex`/`explanation` **omitted while `IN_PROGRESS`**, included once `COMPLETED`.
+- `POST /assessments/:id/submit` `{ answers: [{ questionId, selectedIndex }] }` → grade deterministically, persist, run the debrief, return full results.
+
+### Web
+- New route **`app/(app)/skills`** — skill cards with proficiency + history; the `AssessmentRunner` client component (one-question-at-a-time exam → results view with score ring, level badge, per-question review, debrief, retake).
+- A **"Test"** entry point on each skill pill in the Profile page.
+- New **Skills** sidebar nav item; new web types + server actions, consistent with the interview feature.
+
+### Same guardrails as the rest of the app
+- **Per-user**, and you can only be tested on skills actually on your profile.
+- **Anti-peek**: correct answers + explanations are never sent to the client until you submit — answers live server-side only.
+- Deterministic, explainable scoring (the LLM writes questions and narrates; it does **not** assign your grade).
+- Read-only payoff for now — a test result doesn't silently rewrite your profile.
+
+### Payoff / future wiring (noted, not in first build)
+Proven skills become a signal: a **"verified" badge** on profile skills, an input to the **Job-Match score**, and a way to **prioritise Interview-prep** on the sub-topics you flunked. A **proficiency trend** over retakes.
+
+### In scope (first build)
+One-skill scenario-MCQ test generation calibrated to the profile; exam-mode runner; deterministic scoring + difficulty-weighted proficiency level; per-question review with explanations; AI debrief with focus areas; history + retake; a Skills page + Profile entry point.
+
+### Out of scope (later)
+- **Open-ended / code-reasoning answers** graded by AI (Phase 2) and any **live code execution / sandbox** (no runner, ever in MVP — scenarios + reasoning only).
+- **Timed/proctored** exams or anti-cheat beyond hiding answers.
+- **Multi-skill combined** tests — one skill per assessment for a clean per-skill score.
+- Testing skills **not** on the profile, or auto-adding skills from results.
+- Non-English tests.
+
+### Decisions (resolved at build time)
+1. **Format** — **scenario-MCQ only**. No open-ended/AI-graded questions; "Phase 2" was dropped from scope.
+2. **Mode** — **exam** (answer all → one grade), not per-question reveal.
+3. **Length & calibration** — **12 questions** per test (4 Junior / 5 Mid / 3 Senior), calibrated to the candidate's experience.
+4. **Entry point** — a dedicated **Skills** page (`/skills`) is the entry; sidebar nav added under *Library*. (A per-pill "Test" button on the Profile page was deferred to keep the editable TagInput untouched.)

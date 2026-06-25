@@ -49,9 +49,9 @@
 
 /* Warm & friendly · emerald brand · warm stone neutrals. See design.md. */
 :root {
-    --radius: 0.75rem;
+    --radius: 0.85rem;
 
-    --background: #fafaf9; /* stone-50 */
+    --background: #f7f6f4; /* warm stone, a touch deeper than stone-50 */
     --foreground: #1c1917; /* stone-900 */
     --card: #ffffff;
     --card-foreground: #1c1917;
@@ -64,8 +64,8 @@
     --secondary-foreground: #1c1917;
     --muted: #f5f5f4;
     --muted-foreground: #78716c; /* stone-500 */
-    --accent: #f5f5f4;
-    --accent-foreground: #1c1917;
+    --accent: #ecfdf5; /* emerald-50 — interactive hover tint */
+    --accent-foreground: #047857; /* emerald-700 */
     --destructive: #dc2626; /* red-600 */
 
     --border: #e7e5e4; /* stone-200 */
@@ -78,12 +78,26 @@
     --chart-4: #f43f5e; /* rose-500 */
     --chart-5: #8b5cf6; /* violet-500 */
 
-    --sidebar: #ffffff;
+    /* Brand gradient + ambient page glow + elevation system */
+    --brand-from: #059669; /* emerald-600 */
+    --brand-to: #0d9488; /* teal-600 */
+    --app-glow:
+        radial-gradient(60rem 40rem at 8% -8%, rgba(16, 185, 129, 0.10), transparent 55%),
+        radial-gradient(50rem 36rem at 100% 0%, rgba(13, 148, 136, 0.07), transparent 50%),
+        radial-gradient(40rem 30rem at 50% 120%, rgba(245, 158, 11, 0.05), transparent 60%);
+    --shadow-card:
+        0 1px 2px rgba(28, 25, 23, 0.04), 0 4px 12px -2px rgba(28, 25, 23, 0.05);
+    --shadow-card-hover:
+        0 2px 4px rgba(28, 25, 23, 0.05), 0 16px 32px -8px rgba(28, 25, 23, 0.12);
+    --shadow-brand:
+        0 1px 2px rgba(5, 150, 105, 0.18), 0 10px 24px -6px rgba(5, 150, 105, 0.30);
+
+    --sidebar: #fbfaf9;
     --sidebar-foreground: #1c1917;
     --sidebar-primary: #059669;
     --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #f5f5f4;
-    --sidebar-accent-foreground: #1c1917;
+    --sidebar-accent: #ecfdf5; /* emerald-50 */
+    --sidebar-accent-foreground: #047857; /* emerald-700 */
     --sidebar-border: #e7e5e4;
     --sidebar-ring: #10b981;
 }
@@ -116,14 +130,19 @@
     --chart-4: #fb7185; /* rose-400 */
     --chart-5: #a78bfa; /* violet-400 */
 
-    --sidebar: #1c1917;
+    --sidebar: #131110;
     --sidebar-foreground: #f5f5f4;
     --sidebar-primary: #10b981;
-    --sidebar-primary-foreground: #0c0a09;
-    --sidebar-accent: #292524;
-    --sidebar-accent-foreground: #f5f5f4;
-    --sidebar-border: #ffffff1a;
+    --sidebar-primary-foreground: #06120d;
+    --sidebar-accent: #0d2a20;
+    --sidebar-accent-foreground: #6ee7b7;
+    --sidebar-border: #ffffff14;
     --sidebar-ring: #10b981;
+}
+
+@theme inline {
+    --color-brand-from: var(--brand-from);
+    --color-brand-to: var(--brand-to);
 }
 
 @layer base {
@@ -132,8 +151,67 @@
     }
   body {
     @apply bg-background text-foreground;
+    background-image: var(--app-glow);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
     }
   html {
     @apply font-sans;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
     }
+  :where(h1, h2, h3, .font-heading) {
+    letter-spacing: -0.02em;
+    }
+  ::selection {
+    background-color: color-mix(in oklab, var(--primary) 22%, transparent);
+    }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 35%, transparent) transparent;
+    }
+  *::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+    }
+  *::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklab, var(--muted-foreground) 30%, transparent);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in oklab, var(--muted-foreground) 50%, transparent);
+    }
+}
+
+@utility text-gradient-brand {
+    background-image: linear-gradient(120deg, var(--brand-from), var(--brand-to));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+@utility bg-gradient-brand {
+    background-image: linear-gradient(120deg, var(--brand-from), var(--brand-to));
+}
+
+@utility shadow-card {
+    box-shadow: var(--shadow-card);
+}
+
+@utility shadow-card-hover {
+    box-shadow: var(--shadow-card-hover);
+}
+
+@utility shadow-brand {
+    box-shadow: var(--shadow-brand);
+}
+
+@utility bg-dots {
+    background-image: radial-gradient(
+        color-mix(in oklab, var(--muted-foreground) 22%, transparent) 1px,
+        transparent 1px
+    );
+    background-size: 18px 18px;
 }

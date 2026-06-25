@@ -26,8 +26,10 @@ model Application {
   salaryOffered   Int?
   requirements    String[] // requirement/qualification bullets (full phrases)
   skills          String[] // explicit required skills/tech, e.g. ["React", "Node.js"]
-  matchedSkills   String[] // computed: skills ∩ UserProfile.skills (empty until a profile exists)
-  gapSkills       String[] // computed: skills not in UserProfile.skills
+  matchedSkills   String[] // AI job-match: job skills the candidate meets (empty until scored)
+  gapSkills       String[] // AI job-match: job skills the candidate lacks
+  matchScore      Int?     // AI job-match score 0–100 (Groq) — set on creation if a profile exists, or recalculated
+  matchRationale  String?  // short AI explanation behind matchScore/matchedSkills/gapSkills
   appliedDate     DateTime @default(now())
   followUpDate    DateTime?
   deadlineDate    DateTime?
@@ -275,9 +277,72 @@ enum InterviewPracticeStatus {
   ANSWERED
   REVIEWED
 }
+
+// --- Skills Assessment (self-test of one profile skill; not tied to an Application) ---
+
+model SkillAssessment {
+  id            String               @id @default(cuid())
+  userId        String // owner (Supabase auth UUID)
+  skill         String // the profile skill under test, e.g. "PostgreSQL"
+  status        AssessmentStatus     @default(GENERATING)
+  questionCount Int                  @default(0)
+  correctCount  Int? // filled on submit
+  scorePct      Int? // raw percent correct, 0–100
+  level         ProficiencyLevel? // difficulty-weighted, derived on submit
+  summary       String? // AI debrief overview
+  strengths     String[] // AI debrief: solid sub-topics
+  focusAreas    String[] // AI debrief: sub-topics to study next
+  questions     AssessmentQuestion[]
+  createdAt     DateTime             @default(now())
+  completedAt   DateTime?
+  updatedAt     DateTime             @updatedAt
+
+  @@index([userId])
+  @@index([userId, skill])
+}
+
+model AssessmentQuestion {
+  id            String             @id @default(cuid())
+  assessmentId  String
+  assessment    SkillAssessment    @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  userId        String
+  order         Int
+  difficulty    QuestionDifficulty @default(MID)
+  subtopic      String? // area tested, e.g. "Indexing"
+  scenario      String // real-world situation set-up
+  prompt        String // the question asked
+  options       String[] // exactly 4 answer choices
+  correctIndex  Int // 0-based index of the correct option — withheld from client until COMPLETED
+  explanation   String // why the correct option is right — also withheld until COMPLETED
+  selectedIndex Int? // the user's choice (filled on submit)
+  isCorrect     Boolean? // filled on submit
+  createdAt     DateTime           @default(now())
+
+  @@index([assessmentId])
+  @@index([userId])
+}
+
+enum AssessmentStatus {
+  GENERATING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum QuestionDifficulty {
+  JUNIOR
+  MID
+  SENIOR
+}
+
+enum ProficiencyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
 ```
 
-> **Migration status:** `InterviewSession` / `InterviewQuestion` are in the schema and `prisma generate` is done, but the **migration is not yet applied** — run `prisma migrate dev --name add_interview_sessions` (needs real `DATABASE_URL` + `DIRECT_URL`).
+> **Migration status:** `InterviewSession` / `InterviewQuestion` and `SkillAssessment` / `AssessmentQuestion` are in the schema and `prisma generate` is done, but their migrations are **not yet applied** — run `prisma migrate dev --name add_interview_sessions` and `prisma migrate dev --name add_skill_assessments` (needs real `DATABASE_URL` + `DIRECT_URL`).
 
 ## Package & client (`@repo/database`)
 

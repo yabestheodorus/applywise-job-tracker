@@ -38,6 +38,8 @@ model Application {
   skills          String[] // explicit required skills/tech, e.g. ["React", "Node.js"]
   matchedSkills   String[] // computed: skills ∩ UserProfile.skills (empty until a profile exists)
   gapSkills       String[] // computed: skills not in UserProfile.skills
+  matchScore      Int? // AI job-match score 0–100 (Groq), set on creation (if a profile exists) or recalculated
+  matchRationale  String? // short AI explanation behind matchScore/matchedSkills/gapSkills
   appliedDate     DateTime         @default(now())
   followUpDate    DateTime?
   deadlineDate    DateTime?
@@ -287,4 +289,71 @@ model Education {
   order        Int         @default(0)
 
   @@index([profileId])
+}
+
+// A self-assessment of ONE profile skill: a short scenario-based multiple-choice
+// technical test, AI-generated and calibrated to the user's experience, scored
+// deterministically into a proficiency level. Not tied to any Application —
+// purely "how good am I at this skill?". See Product.md → "Skills Assessment".
+model SkillAssessment {
+  id            String               @id @default(cuid())
+  userId        String // owner (Supabase auth UUID)
+  skill         String // the profile skill under test, e.g. "PostgreSQL"
+  status        AssessmentStatus     @default(GENERATING)
+  questionCount Int                  @default(0)
+  correctCount  Int? // filled on submit
+  scorePct      Int? // raw percent correct, 0–100
+  level         ProficiencyLevel? // difficulty-weighted proficiency, derived on submit
+  summary       String? // AI debrief: 1–2 sentence overview
+  strengths     String[] // AI debrief: sub-topics the user is solid on
+  focusAreas    String[] // AI debrief: sub-topics to study next
+  questions     AssessmentQuestion[]
+  createdAt     DateTime             @default(now())
+  completedAt   DateTime?
+  updatedAt     DateTime             @updatedAt
+
+  @@index([userId])
+  @@index([userId, skill])
+}
+
+// One scenario-based MCQ within an assessment. Correct answer + explanation are
+// withheld from the client until the assessment is submitted (graded server-side).
+model AssessmentQuestion {
+  id            String             @id @default(cuid())
+  assessmentId  String
+  assessment    SkillAssessment    @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  userId        String
+  order         Int
+  difficulty    QuestionDifficulty @default(MID)
+  subtopic      String? // short label for the area tested, e.g. "Indexing"
+  scenario      String // the real-world situation set-up
+  prompt        String // the actual question being asked
+  options       String[] // exactly 4 answer choices
+  correctIndex  Int // 0-based index of the correct option
+  explanation   String // why the correct option is right
+  selectedIndex Int? // the user's choice (filled on submit)
+  isCorrect     Boolean? // selectedIndex === correctIndex (filled on submit)
+  createdAt     DateTime           @default(now())
+
+  @@index([assessmentId])
+  @@index([userId])
+}
+
+enum AssessmentStatus {
+  GENERATING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum QuestionDifficulty {
+  JUNIOR
+  MID
+  SENIOR
+}
+
+enum ProficiencyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
 }

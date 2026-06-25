@@ -64,8 +64,21 @@ export type Application = {
   skills: string[];
   matchedSkills: string[];
   gapSkills: string[];
+  matchScore: number | null; // AI job-match 0–100 (null until computed)
+  matchRationale: string | null;
   notes: string | null;
+  // Latest timeline entry (most recent first, capped to 1 by the list endpoint).
+  statusHistory?: { note: string | null; occurredAt: string }[];
 };
+
+/** Bucket a 0–100 match score into a colour band for the badge. */
+export type MatchTier = 'strong' | 'partial' | 'weak';
+
+export function matchTier(score: number): MatchTier {
+  if (score >= 70) return 'strong';
+  if (score >= 40) return 'partial';
+  return 'weak';
+}
 
 /** One entry in an application's status timeline (StatusEvent + its stage). */
 export type StatusEvent = {
@@ -227,6 +240,86 @@ export type MockReview = {
   strengths: string[];
   improvements: string[];
   score: number;
+};
+
+// --- Skills Assessment ---
+
+export type AssessmentStatus = 'GENERATING' | 'IN_PROGRESS' | 'COMPLETED';
+export type QuestionDifficulty = 'JUNIOR' | 'MID' | 'SENIOR';
+export type ProficiencyLevel =
+  | 'BEGINNER'
+  | 'INTERMEDIATE'
+  | 'ADVANCED'
+  | 'EXPERT';
+
+export const DIFFICULTY_LABELS: Record<QuestionDifficulty, string> = {
+  JUNIOR: 'Junior',
+  MID: 'Mid',
+  SENIOR: 'Senior',
+};
+
+export const PROFICIENCY_LABELS: Record<ProficiencyLevel, string> = {
+  BEGINNER: 'Beginner',
+  INTERMEDIATE: 'Intermediate',
+  ADVANCED: 'Advanced',
+  EXPERT: 'Expert',
+};
+
+/** Tailwind classes per proficiency level for the badge (chip style). */
+export const PROFICIENCY_TONE: Record<ProficiencyLevel, string> = {
+  BEGINNER:
+    'bg-stone-100 text-stone-600 ring-stone-500/20 dark:bg-stone-800 dark:text-stone-300 dark:ring-stone-400/20',
+  INTERMEDIATE:
+    'bg-sky-50 text-sky-700 ring-sky-600/20 dark:bg-sky-950 dark:text-sky-300 dark:ring-sky-400/20',
+  ADVANCED:
+    'bg-violet-50 text-violet-700 ring-violet-600/20 dark:bg-violet-950 dark:text-violet-300 dark:ring-violet-400/20',
+  EXPERT:
+    'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-950 dark:text-emerald-300 dark:ring-emerald-400/20',
+};
+
+/** One scenario-MCQ. Answer fields are null until the test is submitted. */
+export type AssessmentQuestion = {
+  id: string;
+  order: number;
+  difficulty: QuestionDifficulty;
+  subtopic: string | null;
+  scenario: string;
+  prompt: string;
+  options: string[];
+  selectedIndex: number | null;
+  correctIndex: number | null;
+  explanation: string | null;
+  isCorrect: boolean | null;
+};
+
+/** Full assessment (GET /assessments/:id, POST /assessments, /submit). */
+export type Assessment = {
+  id: string;
+  skill: string;
+  status: AssessmentStatus;
+  questionCount: number;
+  correctCount: number | null;
+  scorePct: number | null;
+  level: ProficiencyLevel | null;
+  summary: string | null;
+  strengths: string[];
+  focusAreas: string[];
+  createdAt: string;
+  completedAt: string | null;
+  questions: AssessmentQuestion[];
+};
+
+/** History row (GET /assessments) — no questions. */
+export type AssessmentSummary = {
+  id: string;
+  skill: string;
+  status: AssessmentStatus;
+  questionCount: number;
+  correctCount: number | null;
+  scorePct: number | null;
+  level: ProficiencyLevel | null;
+  createdAt: string;
+  completedAt: string | null;
 };
 
 export type CvParseStatus = 'NONE' | 'PROCESSING' | 'COMPLETED' | 'FAILED';

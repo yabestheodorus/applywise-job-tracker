@@ -51,6 +51,8 @@ POST   /applications/extract     # body: { rawText, source } → Groq extracts a
                                  #   "Add application" form. Does NOT decide new-vs-update.
 POST   /applications             # create application (from confirmed draft)
 GET    /applications             # list current user's applications, ?statusId= filter
+                                 #   (each row includes its single latest StatusEvent { note, occurredAt }
+                                 #    for the board card's "latest update" line)
 GET    /applications/:id         # get one, includes statusHistory
 PATCH  /applications/:id         # update notes, dates, salary etc (not status — use dedicated endpoint below)
 DELETE /applications/:id
@@ -73,7 +75,13 @@ POST   /events                   # manually add an event: { applicationId, title
 PATCH  /events/:id               # edit an event or mark it done: { title?, type?, scheduledAt?, note?, completed? }
 DELETE /events/:id               # remove an event
 
-POST   /applications/:id/match-skills   # AI compares requirements vs UserProfile.skills
+POST   /applications/:id/match          # Groq scores job fit (profile vs job requirements/skills) →
+                                        #   persists { matchScore 0–100, matchedSkills[], gapSkills[], matchRationale }
+                                        #   and returns the updated application. Also run best-effort on create
+                                        #   (when the profile has any skills/experience/summary). Powers the
+                                        #   coloured score badge on the card + the "Recalculate" button on detail.
+POST   /applications/:id/cover-letter   # Groq writes a tailored cover-letter DRAFT (plain text via chatText) from
+                                        #   the job + the user's profile. Read-only — returned for copy, never saved.
 
 GET    /stages                   # list all StatusStage (for Kanban columns / dropdown)
 POST   /stages                   # create custom stage (label, color, order)
@@ -119,7 +127,17 @@ POST   /interview/sessions/:id/mock/review     # body: { messages[] } → end-of
 POST   /interview/questions/:id/coach         # body: { userAnswer } → AI score/feedback/improvedAnswer/keyPoints
 PATCH  /interview/questions/:id               # edit answer, self-rating, or practiceStatus (drill loop)
 POST   /interview/questions/:id/save-template # push the polished answer into the Template library
+
+POST   /assessments              # body: { skill } → generate a 12-question scenario-MCQ test for ONE profile
+                                 #   skill (must be on the profile). Returns the assessment with correct
+                                 #   answers + explanations STRIPPED (anti-peek). Scoped per-user.
+GET    /assessments              # history — one row per assessment (skill, status, scorePct, level, dates), newest first
+GET    /assessments/:id          # one assessment; correctIndex/explanation/isCorrect omitted until status=COMPLETED
+POST   /assessments/:id/submit   # body: { answers: [{ questionId, selectedIndex }] } → deterministic grading +
+                                 #   difficulty-weighted proficiency level + AI debrief (summary/strengths/focusAreas)
 ```
+
+**Web route:** `app/(app)/skills` lists the profile's skills as `SkillTestCard`s (latest proficiency + Start/Resume/Retake) plus a recent-tests list; `app/(app)/skills/[id]` renders the `AssessmentRunner` (exam mode, one question at a time, quick-jump dots) while `IN_PROGRESS` and the `AssessmentResults` (score ring + proficiency badge + strengths/focus areas + per-question review with explanations + Retake) once `COMPLETED`. Server actions in `skills/actions.ts`; sidebar nav entry under *Library*.
 
 **Web route:** `app/(app)/applications/[id]/interview/[sessionId]` renders a client `InterviewWorkspace` with three modes — **Practice** (attempt → AI coach → save to library), **Live mock** (chat with dynamic follow-ups), and **Recap & drill** (flashcards with self-rating + re-queue). An **Interview prep** card on the application detail page lists sessions and starts new ones. Server actions in `applications/[id]/interview/actions.ts`.
 

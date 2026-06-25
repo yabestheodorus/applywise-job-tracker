@@ -2,7 +2,7 @@
 
 The visual language for ApplyWise. **Warm & friendly, light-first (ships dark too), emerald accent on a warm stone neutral base.** Color on the board is *restrained* — neutral surfaces with thin colored accents, never full tints.
 
-> Status: **Installed** in `apps/web` — Tailwind v4 + shadcn/ui (`radix-nova` style, `stone` base) with this emerald/stone theme and the Inter + Cal Sans fonts wired in `globals.css` / `layout.tsx`. Remaining UI wiring (themes toggle, dnd-kit, etc.) is tracked in the Setup checklist at the bottom.
+> Status: **Installed** in `apps/web` — Tailwind v4 + shadcn/ui (`radix-nova` style, `stone` base) with this emerald/stone theme and the Plus Jakarta Sans + Cal Sans fonts wired in `globals.css` / `layout.tsx` (plus the 2026-06-24 identity layer — brand gradient, layered shadows, ambient glow; see §5). Remaining UI wiring (themes toggle, dnd-kit, etc.) is tracked in the Setup checklist at the bottom.
 
 ## 1. Principles
 1. **Calm by default, color with intent.** Neutral canvas; color earns attention (brand action, urgency, stage). A board of 15+ cards must stay scannable.
@@ -73,8 +73,8 @@ Every stage carries a user-picked hex (default `#94a3b8`). To stay restrained **
 
 ## 4. Typography
 - **Headings / display:** **Cal Sans** (weight 600). Friendly, characterful. Use for page titles, section headers, card-detail titles, empty-state headlines.
-- **Body / UI:** **Inter**. All body copy, labels, buttons, inputs, table cells.
-- **Numbers:** no mono font — use **Inter with `tabular-nums`** (`font-variant-numeric: tabular-nums`) for salaries, counts, dates, timestamps so columns align.
+- **Body / UI:** **Plus Jakarta Sans** (geometric humanist — warmer and more distinctive than the default Inter it replaced as of 2026-06-24). All body copy, labels, buttons, inputs, table cells.
+- **Numbers:** no mono font — use the body font with `tabular-nums` (`font-variant-numeric: tabular-nums`) for salaries, counts, dates, timestamps so columns align.
 
 | Role | Font | Size / line | Weight |
 |---|---|---|---|
@@ -90,9 +90,16 @@ Load via `next/font`: Inter (`next/font/google`), Cal Sans (`next/font/google` �
 
 ## 5. Spacing, radius, elevation
 - **Spacing:** 4px base. Common steps: 4, 8, 12, 16, 24, 32, 48. Card padding `16px` (`p-4`). Card-to-card gap `12px`. Page gutter `24px`.
-- **Radius:** `--radius: 0.75rem` (12px, on the rounder side for warmth). Cards `rounded-xl`, controls/inputs `rounded-lg`, chips/badges `rounded-full`.
-- **Elevation (light):** soft, stone-tinted. Cards rest at `shadow-xs`, hover/drag `shadow-md`. **Dark mode** leans on `border` + raised `card` bg rather than shadow.
-- **Borders:** 1px `border` for separation; the 3px stage accent is the only "heavy" border.
+- **Radius:** `--radius: 0.85rem` (~14px, on the rounder side for warmth — bumped from 0.75rem on 2026-06-24 for a softer, more modern feel). Cards/badges `rounded-2xl`, controls/inputs `rounded-lg`, chips/pills `rounded-full`.
+- **Elevation (light):** soft, stone-tinted, **layered**. Custom utilities in `globals.css`: `shadow-card` (resting) → `shadow-card-hover` (hover/drag, paired with a `-translate-y-0.5` lift) → `shadow-brand` (emerald-tinted glow under the gradient icon badges + primary CTA hover). **Dark mode** uses deeper black-tinted versions of the same tokens.
+- **Borders:** 1px `border` for separation; the 3px stage accent is the only "heavy" border. Cards carry a hairline `ring-1 ring-foreground/10`.
+
+### Identity layer (added 2026-06-24)
+The base palette stays warm-stone + emerald, but the product now has a distinct visual signature beyond flat surfaces:
+- **Brand gradient:** `--brand-from` (emerald-600) → `--brand-to` (teal-600), exposed as `bg-gradient-brand` / `text-gradient-brand` utilities + the `brand-from`/`brand-to` Tailwind colors. Drives the **primary button** (gradient + `shadow-brand` glow on hover), every **page-header icon badge** (`PageHeader` component), and the templates hero badge.
+- **Ambient page glow:** `--app-glow` — three faint fixed radial gradients (emerald top-left, teal top-right, amber bottom) painted on `body`, so the canvas reads as crafted rather than a flat fill.
+- **Sidebar identity:** grouped nav (Workspace / Library) with section labels, each item an icon-in-a-rounded-container + an emerald active accent bar; a footer "AI-powered" gradient tip card. Sidebar surface is a hair warmer than the canvas.
+- **Polish:** themed slim scrollbars, emerald text-selection, tightened heading tracking (`-0.02em`), `bg-dots` texture utility for hero/empty surfaces.
 
 ## 6. Layout & key screens
 - **App shell:** top bar (logo wordmark in Cal Sans, global "+ Add application", theme toggle, profile avatar) + content. Max width `max-w-screen-2xl`, gutter `px-6`.

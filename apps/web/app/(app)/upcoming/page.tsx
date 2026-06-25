@@ -3,6 +3,7 @@ import { CalendarClock } from 'lucide-react';
 
 import { EventActions } from '@/components/application/event-actions';
 import { EventTypeBadge } from '@/components/application/event-type-badge';
+import { PageHeader } from '@/components/page-header';
 import { Card } from '@/components/ui/card';
 import { apiFetch } from '@/lib/api/server';
 import {
@@ -20,20 +21,12 @@ export default async function UpcomingPage() {
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-6">
-      <div className="mb-6 flex items-center gap-3">
-        <span className="bg-primary/10 text-primary flex size-11 shrink-0 items-center justify-center rounded-xl">
-          <CalendarClock className="size-5" />
-        </span>
-        <div>
-          <h1 className="font-heading text-2xl leading-tight tracking-tight">
-            Upcoming
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Interviews, assessment deadlines, and follow-ups across all your
-            applications — soonest first.
-          </p>
-        </div>
-      </div>
+      <PageHeader
+        icon={CalendarClock}
+        title="Upcoming"
+        description="Interviews, assessment deadlines, and follow-ups across all your applications — soonest first."
+        className="mb-6"
+      />
 
       {events.length === 0 ? (
         <Card className="items-center gap-3 py-12 text-center">

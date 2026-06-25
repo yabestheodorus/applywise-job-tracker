@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { MapPin, MoreHorizontal, Wallet } from 'lucide-react';
+import { useTransition } from 'react';
+import { History, Loader2, MapPin, MoreHorizontal, Wallet } from 'lucide-react';
+import { toast } from 'sonner';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +15,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SourceIcon } from './source-icon';
 import { UrgencyChip } from './urgency-chip';
+import { MatchBadge } from './match-badge';
+import { deleteApplication } from '@/app/(app)/applications/actions';
 import { formatIDR, type Application, type StatusStage } from '@/lib/types';
 
 function initials(name: string): string {
@@ -29,8 +33,24 @@ export function ApplicationCard({
   stage: StatusStage;
 }) {
   const router = useRouter();
+  const [deleting, startDelete] = useTransition();
   const href = `/applications/${app.id}`;
 
+  function onDelete() {
+    if (!window.confirm(`Delete ${app.company} — ${app.role}? This also removes its timeline, events, and interview prep. This can’t be undone.`))
+      return;
+    startDelete(async () => {
+      const res = await deleteApplication(app.id);
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success('Application deleted');
+      router.refresh();
+    });
+  }
+
+  const latestNote = app.statusHistory?.[0]?.note?.trim();
   const matched = app.matchedSkills ?? [];
   const gap = app.gapSkills ?? [];
   const totalSkills = matched.length + gap.length;
@@ -42,15 +62,19 @@ export function ApplicationCard({
   const overflow = chips.length - shown.length;
 
   return (
-    <Card className="group hover:border-foreground/15 gap-0 p-0 shadow-xs transition-all hover:shadow-md">
+    <Card className="group shadow-card hover:ring-foreground/15 gap-0 p-0 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover">
       {/* stage accent strip */}
       <div className="h-1 w-full" style={{ backgroundColor: stage.color }} />
 
       <div className="flex flex-col gap-3 p-3">
         <div className="flex items-start gap-2.5">
           <span
-            className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg text-xs font-semibold"
-            style={{ backgroundColor: `${stage.color}1A`, color: stage.color }}
+            className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg text-xs font-semibold ring-1 ring-inset"
+            style={{
+              backgroundColor: `${stage.color}1A`,
+              color: stage.color,
+              ['--tw-ring-color' as string]: `${stage.color}33`,
+            }}
             aria-hidden
           >
             {initials(app.company)}
@@ -77,13 +101,24 @@ export function ApplicationCard({
               <DropdownMenuItem onClick={() => router.push(href)}>
                 Update status
               </DropdownMenuItem>
-              <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+              <DropdownMenuItem
+                variant="destructive"
+                disabled={deleting}
+                onSelect={(e) => {
+                  e.preventDefault();
+                  onDelete();
+                }}
+              >
+                {deleting ? <Loader2 className="size-4 animate-spin" /> : null}
+                Delete
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
 
         {/* meta row */}
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+          <MatchBadge score={app.matchScore} />
           <SourceIcon source={app.source} />
           {app.location ? (
             <span className="inline-flex min-w-0 items-center gap-1">
@@ -98,6 +133,14 @@ export function ApplicationCard({
             </span>
           ) : null}
         </div>
+
+        {/* latest status update */}
+        {latestNote ? (
+          <div className="text-muted-foreground flex items-start gap-1.5 text-xs">
+            <History className="mt-0.5 size-3.5 shrink-0" />
+            <span className="line-clamp-2 leading-snug">{latestNote}</span>
+          </div>
+        ) : null}
 
         {/* skill match */}
         {chips.length > 0 ? (

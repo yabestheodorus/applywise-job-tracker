@@ -12,6 +12,8 @@ import {
 import { StatusBadge } from '@/components/board/status-badge';
 import { SourceIcon } from '@/components/board/source-icon';
 import { ApplicationEvents } from '@/components/application/application-events';
+import { CoverLetterDialog } from '@/components/application/cover-letter-dialog';
+import { MatchSummary } from '@/components/application/match-summary';
 import { StatusTimeline } from '@/components/application/status-timeline';
 import { StatusUpdatePanel } from '@/components/application/status-update-panel';
 import { InterviewPrepCard } from '@/components/interview/interview-prep-card';
@@ -95,11 +97,24 @@ export default async function ApplicationDetailPage({
       {/* Header */}
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="font-heading text-2xl leading-tight">
-              {application.company}
-            </h1>
-            <p className="text-muted-foreground">{application.role}</p>
+          <div className="flex min-w-0 items-center gap-3.5">
+            <span
+              className="flex size-12 shrink-0 items-center justify-center rounded-2xl text-sm font-bold ring-1 ring-inset"
+              style={{
+                backgroundColor: `${application.status.color}1A`,
+                color: application.status.color,
+                ['--tw-ring-color' as string]: `${application.status.color}33`,
+              }}
+              aria-hidden
+            >
+              {application.company.trim().slice(0, 2).toUpperCase()}
+            </span>
+            <div className="min-w-0">
+              <h1 className="font-heading text-2xl leading-tight">
+                {application.company}
+              </h1>
+              <p className="text-muted-foreground">{application.role}</p>
+            </div>
           </div>
           <StatusBadge stage={application.status} />
         </div>
@@ -146,6 +161,10 @@ export default async function ApplicationDetailPage({
             ) : null}
           </div>
         )}
+
+        <div className="flex flex-wrap items-center gap-2">
+          <CoverLetterDialog applicationId={application.id} />
+        </div>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
@@ -169,6 +188,11 @@ export default async function ApplicationDetailPage({
               <CardTitle>Skill match</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
+              <MatchSummary
+                applicationId={application.id}
+                score={application.matchScore}
+                rationale={application.matchRationale}
+              />
               <SkillRow
                 label="Matched skills"
                 tone="emerald"

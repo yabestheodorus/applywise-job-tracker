@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter, Cal_Sans } from 'next/font/google';
+import { Plus_Jakarta_Sans, Cal_Sans } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { ThemeProvider } from '@/components/theme/theme-provider';
@@ -7,7 +7,10 @@ import { ThemeScript } from '@/components/theme/theme-script';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Analytics } from '@vercel/analytics/next';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  variable: '--font-sans',
+});
 const calSans = Cal_Sans({
   subsets: ['latin'],
   weight: '400',
@@ -28,7 +31,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn(inter.variable, calSans.variable)}
+      className={cn(jakarta.variable, calSans.variable)}
     >
       <body className="font-sans antialiased">
         <ThemeScript />

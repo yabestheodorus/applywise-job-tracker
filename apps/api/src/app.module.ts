@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 
 import { AppController } from './app.controller';
 import { ApplicationsModule } from './applications/applications.module';
+import { AssessmentsModule } from './assessments/assessments.module';
 import { SupabaseAuthGuard } from './auth/supabase-auth.guard';
 import { CommonModule } from './common/common.module';
 import { EventsModule } from './events/events.module';
@@ -22,6 +23,7 @@ import { TemplatesModule } from './templates/templates.module';
     EventsModule,
     TemplatesModule,
     InterviewModule,
+    AssessmentsModule,
   ],
   controllers: [AppController],
   providers: [

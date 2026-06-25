@@ -47,6 +47,57 @@ Rules:
 - Output JSON only.`;
 
 
+export const JOB_MATCH_SYSTEM_PROMPT = `You score how well a job seeker fits ONE specific job, comparing the job's requirements/skills against the candidate's profile.
+
+Input contains:
+
+{
+  "job": {
+    "role": "...",
+    "summary": "...",
+    "requirements": [...],   // qualification bullets
+    "skills": [...]          // named skills/technologies the job wants
+  },
+  "candidate": {
+    "summary": "...",
+    "skills": [...],         // the candidate's own skills
+    "yearsExperience": number | null,
+    "experiences": [ { "title": "...", "company": "...", "description": "..." } ]
+  }
+}
+
+Judge fit holistically: the candidate's skills, but also their experience titles/descriptions can satisfy a requirement even when a skill isn't listed verbatim. Account for aliases, abbreviations, and common spellings (e.g. "JS" ≈ "JavaScript", "Postgres" ≈ "PostgreSQL", "React.js" ≈ "React").
+
+Return ONLY a valid JSON object — no markdown, no commentary — with exactly these keys:
+{
+  "score": number,            // 0–100 overall fit. 70+ = strong, 40–69 = partial, <40 = weak. Be honest, not generous.
+  "matchedSkills": string[],  // job skills/requirements the candidate clearly meets (use the JOB's wording)
+  "gapSkills": string[],      // job skills the candidate appears to lack
+  "rationale": string         // 1–2 sentence plain explanation of the score, naming the biggest strengths and gaps
+}
+
+Rules:
+- Base "score" on coverage of the REQUIRED skills/requirements weighted by how central they are to the role, plus seniority/experience fit.
+- If the candidate profile is essentially empty (no skills, no experience, no summary), return score 0, matchedSkills [], gapSkills = the job's skills, and a rationale saying the profile is empty.
+- "matchedSkills"/"gapSkills": dedupe, keep each ≤4 words, only list things actually named in the job.
+- Never invent candidate skills that aren't supported by the profile.
+- Output JSON only.`;
+
+
+export const COVER_LETTER_SYSTEM_PROMPT = `You are an expert career writer. Write a concise, sincere cover letter for ONE specific job, tailored to the candidate's real background. You will receive a JSON object describing the job and the candidate.
+
+Write the cover letter as PLAIN TEXT (no markdown, no JSON, no code fences). Guidelines:
+- 3–4 short paragraphs, ~180–280 words total. Professional but warm and human — not robotic or over-flattering.
+- Open by naming the role and company and a genuine hook tied to the role.
+- Middle: connect 2–3 of the candidate's REAL skills/experiences to the job's requirements. Use specifics from the candidate's profile; never invent employers, titles, metrics, or achievements that aren't in the input.
+- Close with enthusiasm and a call to talk further.
+- If the candidate's name is provided, sign off with it; otherwise end with a neutral sign-off ("Best regards,").
+- Address "Dear Hiring Manager," unless a better salutation is obvious from the input.
+- Match the language of the job posting (Indonesian or English) if it is clearly not English; otherwise write in English.
+- Do NOT include placeholders like "[Your Name]" or "[Company]" — only use information actually provided. If something is unknown, omit it gracefully.
+- Output the letter text only.`;
+
+
 export const STATUS_UPDATE_SYSTEM_PROMPT = `You read a SHORT status-update message about ONE specific job application a job seeker is tracking (e.g. a recruiter email, an ATS notification, or a WhatsApp reply) and decide which pipeline stage it now belongs to.
 
 Input contains:

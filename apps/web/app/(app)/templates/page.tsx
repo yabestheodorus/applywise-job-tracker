@@ -34,8 +34,8 @@ export default async function TemplatesPage() {
     <div className="mx-auto max-w-4xl px-6 py-6">
       <header className="border-primary/20 from-primary/10 via-primary/5 mb-8 overflow-hidden rounded-2xl border bg-linear-to-br to-transparent p-6">
         <div className="flex items-start gap-4">
-          <div className="bg-primary text-primary-foreground flex size-11 shrink-0 items-center justify-center rounded-xl shadow-sm">
-            <Library className="size-5" />
+          <div className="bg-gradient-brand text-primary-foreground shadow-brand flex size-12 shrink-0 items-center justify-center rounded-2xl ring-1 ring-white/10">
+            <Library className="size-6" />
           </div>
           <div className="min-w-0">
             <h1 className="font-heading text-2xl">Templates</h1>
